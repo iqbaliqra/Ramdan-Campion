@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
-import { Cinzel_Decorative, Crimson_Pro, JetBrains_Mono } from 'next/font/google';
+import {
+  Cinzel_Decorative,
+  Crimson_Pro,
+  JetBrains_Mono,
+} from 'next/font/google';
 import './globals.css';
 
 const cinzelDecorative = Cinzel_Decorative({
@@ -33,10 +37,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${cinzelDecorative.variable} ${crimsonPro.variable} ${jetbrainsMono.variable}`}
-      >
+        suppressHydrationWarning>
         {children}
       </body>
     </html>

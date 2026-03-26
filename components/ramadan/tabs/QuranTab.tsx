@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { QuranFullSurahs } from '@/components/ramadan/QuranFullSurahs';
+import type { QuranSurah } from '@/lib/ramadan/quran-api';
 import { verses } from '@/lib/ramadan/constants';
 
 type Props = {
@@ -12,12 +13,31 @@ type Props = {
 
 export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
   const [verseIdx, setVerseIdx] = useState(0);
+
+  /*
+   * selectedSurah — added now, used in Step 2.
+   * When a card is clicked, this is set.
+   * Step 2 will render <SurahOverlay> based on this value.
+   */
+  const [selectedSurah, setSelectedSurah] = useState<QuranSurah | null>(null);
+
   const v = verses[verseIdx];
 
   return (
-    <div className={'tab-section' + (active ? ' active' : '')} id="tab-quran" role="tabpanel">
-      {active && <QuranFullSurahs />}
+    <div
+      className={'tab-section' + (active ? ' active' : '')}
+      id="tab-quran"
+      role="tabpanel">
+      {/*
+       * STEP 1: Grid — only mount when tab is active.
+       * onSurahSelect sets selectedSurah (Step 2 will open the overlay).
+       * For now clicking a card does nothing visible — Step 2 adds the overlay.
+       */}
+      {active && (
+        <QuranFullSurahs onSurahSelect={(surah) => setSelectedSurah(surah)} />
+      )}
 
+      {/* ── Verse of the Day ── */}
       <div className="section-title">📖 Verse of the Day</div>
       <div className="card">
         <div className="quran-arabic" id="verseArabic">
@@ -29,18 +49,29 @@ export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
         <div className="quran-ref" id="verseRef">
           {v.ref}
         </div>
-        <button type="button" className="refresh-btn" onClick={() => setVerseIdx((i) => (i + 1) % verses.length)}>
+        <button
+          type="button"
+          className="refresh-btn"
+          onClick={() => setVerseIdx((i) => (i + 1) % verses.length)}>
           ↺ Next Verse
         </button>
       </div>
 
+      {/* ── 30-Day Reading Plan ── */}
       <div style={{ marginTop: 24 }} className="section-title">
         📚 30-Day Reading Plan
       </div>
       <div className="card">
-        <p style={{ color: 'var(--silver)', fontSize: '0.95rem', lineHeight: 1.7, marginBottom: 16 }}>
+        <p
+          style={{
+            color: 'var(--silver)',
+            fontSize: '0.95rem',
+            lineHeight: 1.7,
+            marginBottom: 16,
+          }}>
           Complete the Quran in Ramadan by reading{' '}
-          <span style={{ color: 'var(--gold2)' }}>4 pages (2 rub)</span> after each prayer, or{' '}
+          <span style={{ color: 'var(--gold2)' }}>4 pages (2 rub)</span> after
+          each prayer, or{' '}
           <span style={{ color: 'var(--gold2)' }}>1 Juz per day</span>.
         </p>
         <div className="juz-grid" id="juzGrid">
@@ -51,8 +82,7 @@ export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
                 key={n}
                 type="button"
                 className={'juz-cell' + (isDone ? ' read' : '')}
-                onClick={() => onToggleJuz(n)}
-              >
+                onClick={() => onToggleJuz(n)}>
                 <div className="juz-num">{n}</div>
                 <div className="juz-lbl">JUZ</div>
               </button>
