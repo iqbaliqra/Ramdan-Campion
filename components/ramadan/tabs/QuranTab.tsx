@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { QuranFullSurahs } from '@/components/ramadan/QuranFullSurahs';
+import { SurahOverlay } from '@/components/ramadan/SurahOverlay';
 import type { QuranSurah } from '@/lib/ramadan/quran-api';
 import { verses } from '@/lib/ramadan/constants';
 
@@ -13,13 +14,15 @@ type Props = {
 
 export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
   const [verseIdx, setVerseIdx] = useState(0);
+  const [selectedSurah, setSelectedSurah] = useState<QuranSurah | null>(null);
 
   /*
-   * selectedSurah — added now, used in Step 2.
-   * When a card is clicked, this is set.
-   * Step 2 will render <SurahOverlay> based on this value.
+   * We need allSurahs here so SurahOverlay can navigate prev/next
+   * without re-fetching. QuranFullSurahs has already cached them
+   * in the module-level cache inside quran-api.ts, so we just lift
+   * them up the first time they arrive via onSurahsLoaded.
    */
-  const [selectedSurah, setSelectedSurah] = useState<QuranSurah | null>(null);
+  const [allSurahs, setAllSurahs] = useState<QuranSurah[]>([]);
 
   const v = verses[verseIdx];
 
@@ -28,13 +31,22 @@ export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
       className={'tab-section' + (active ? ' active' : '')}
       id="tab-quran"
       role="tabpanel">
-      {/*
-       * STEP 1: Grid — only mount when tab is active.
-       * onSurahSelect sets selectedSurah (Step 2 will open the overlay).
-       * For now clicking a card does nothing visible — Step 2 adds the overlay.
-       */}
+      {/* ── STEP 2: Overlay — rendered outside tab flow so it covers everything ── */}
+      {selectedSurah && allSurahs.length > 0 && (
+        <SurahOverlay
+          surah={selectedSurah}
+          allSurahs={allSurahs}
+          onClose={() => setSelectedSurah(null)}
+          onNavigate={(s) => setSelectedSurah(s)}
+        />
+      )}
+
+      {/* ── Surah Grid (Step 1) ── */}
       {active && (
-        <QuranFullSurahs onSurahSelect={(surah) => setSelectedSurah(surah)} />
+        <QuranFullSurahs
+          onSurahSelect={(surah) => setSelectedSurah(surah)}
+          onSurahsLoaded={(surahs) => setAllSurahs(surahs)}
+        />
       )}
 
       {/* ── Verse of the Day ── */}

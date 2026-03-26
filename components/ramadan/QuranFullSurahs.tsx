@@ -132,9 +132,10 @@ type FilterType = 'all' | 'meccan' | 'medinan';
 ════════════════════════════════════════════ */
 type Props = {
   onSurahSelect?: (surah: QuranSurah) => void;
+  onSurahsLoaded?: (surahs: QuranSurah[]) => void;
 };
 
-export function QuranFullSurahs({ onSurahSelect }: Props) {
+export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
   const [surahs, setSurahs] = useState<QuranSurah[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -148,6 +149,7 @@ export function QuranFullSurahs({ onSurahSelect }: Props) {
     try {
       const data = await fetchFullQuranUthmani();
       setSurahs(data);
+      onSurahsLoaded?.(data);
       // Small delay so first paint is done before animating in
       setTimeout(() => setReady(true), 60);
     } catch (e) {
