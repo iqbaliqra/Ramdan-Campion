@@ -1152,11 +1152,6 @@ header h1 {
   }
 }
 
-/* ═══════════════════════════════════════════════
-   STEP 3 — Paste at the very bottom of globals.css
-   (spin already exists — do NOT add it again)
-═══════════════════════════════════════════════ */
-
 /* Audio wave bars — animate up/down */
 @keyframes audioWave {
   0%,
