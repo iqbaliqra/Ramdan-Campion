@@ -1,14 +1,32 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { QuranSurah } from '@/lib/ramadan/quran-api';
 
 /* ─────────────────────────────────────────────────────────────────
-   STEP 2 — SurahOverlay
-   Full-screen in-app overlay. No routing. Slides up over the app.
-   Place this file at: src/components/ramadan/SurahOverlay.tsx
+   SurahOverlay — Audio Player + Ayah Highlighting
+   Reciter : Abdul Basit Abdus Samad (Murattal 192kbps)
+   CDN     : everyayah.com
 ───────────────────────────────────────────────────────────────── */
 
+function ayahAudioUrl(surahNum: number, ayahNum: number): string {
+  const s = String(surahNum).padStart(3, '0');
+  const a = String(ayahNum).padStart(3, '0');
+  return `https://everyayah.com/data/Abdul_Basit_Murattal_192kbps/${s}${a}.mp3`;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Helper — does ayah 1 of this surah contain the Bismillah?
+   (API prepends it for every surah except 1 and 9)
+───────────────────────────────────────────────────────────────── */
+function ayah1IsBismillah(surah: QuranSurah): boolean {
+  if (surah.number === 1 || surah.number === 9) return false;
+  const text = surah.ayahs[0]?.text ?? '';
+  return text.includes('ٱلرَّحِيمِ') || text.includes('الرَّحِيمِ');
+}
+
+/* ── Translations ── */
 const TRANSLATIONS: Record<number, string> = {
   1: 'The Opening',
   2: 'The Cow',
@@ -126,24 +144,8 @@ const TRANSLATIONS: Record<number, string> = {
   114: 'The Mankind',
 };
 
-/* ─────────────────────────────────────────────────────────────────
-   The alquran.cloud API prepends the full Bismillah text to the
-   first ayah of every surah. We check for both Unicode variants
-   (ٱ vs ا) so we never render the BismillahDivider twice.
-───────────────────────────────────────────────────────────────── */
-const BISMILLAH_PREFIX = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
-const BISMILLAH_PREFIX_ALT = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+type PlayState = 'idle' | 'loading' | 'playing' | 'paused';
 
-function firstAyahHasBismillah(surah: QuranSurah): boolean {
-  const first = surah.ayahs[0]?.text ?? '';
-  return (
-    first.startsWith(BISMILLAH_PREFIX) || first.startsWith(BISMILLAH_PREFIX_ALT)
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   Types
-───────────────────────────────────────────────────────────────── */
 type Props = {
   surah: QuranSurah;
   allSurahs: QuranSurah[];
@@ -152,24 +154,160 @@ type Props = {
 };
 
 /* ══════════════════════════════════════════════════════════════
-   Main SurahOverlay component
+   useAudioPlayer
+══════════════════════════════════════════════════════════════ */
+function useAudioPlayer(surah: QuranSurah) {
+  const [playState, setPlayState] = useState<PlayState>('idle');
+  const [activeAyah, setActiveAyah] = useState<number | null>(null);
+  const [isPlayAll, setIsPlayAll] = useState(false);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isPlayAllRef = useRef(false);
+  const surahRef = useRef(surah);
+
+  useEffect(() => {
+    surahRef.current = surah;
+  }, [surah]);
+  useEffect(() => {
+    isPlayAllRef.current = isPlayAll;
+  }, [isPlayAll]);
+
+  const stop = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.oncanplay = null;
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
+    setPlayState('idle');
+    setActiveAyah(null);
+    setIsPlayAll(false);
+    isPlayAllRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    stop();
+  }, [surah.number, stop]);
+  useEffect(() => () => stop(), [stop]);
+
+  const playAyah = useCallback((ayahNum: number) => {
+    if (audioRef.current) {
+      audioRef.current.oncanplay = null;
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setActiveAyah(ayahNum);
+    setPlayState('loading');
+
+    const audio = new Audio();
+    audioRef.current = audio;
+
+    audio.oncanplay = () => {
+      setPlayState('playing');
+      audio.play().catch(() => {
+        setPlayState('idle');
+        setActiveAyah(null);
+      });
+    };
+
+    audio.onerror = () => {
+      setPlayState('idle');
+      setActiveAyah(null);
+    };
+
+    audio.onended = () => {
+      if (!isPlayAllRef.current) {
+        setPlayState('idle');
+        setActiveAyah(null);
+        return;
+      }
+      const nextNum = ayahNum + 1;
+      const exists = surahRef.current.ayahs.some(
+        (a) => a.numberInSurah === nextNum,
+      );
+      if (exists) {
+        playAyah(nextNum);
+      } else {
+        setPlayState('idle');
+        setActiveAyah(null);
+        setIsPlayAll(false);
+        isPlayAllRef.current = false;
+      }
+    };
+
+    audio.src = ayahAudioUrl(surahRef.current.number, ayahNum);
+    audio.load();
+  }, []);
+
+  const togglePlayAll = useCallback(() => {
+    if (playState === 'playing' || playState === 'loading') {
+      stop();
+      return;
+    }
+    /* Skip bismillah ayah (ayah 1) for all surahs except 1 and 9 */
+    const hasBismillah = ayah1IsBismillah(surahRef.current);
+    const startAyah = hasBismillah ? 2 : 1;
+    isPlayAllRef.current = true;
+    setIsPlayAll(true);
+    playAyah(startAyah);
+  }, [playState, stop, playAyah]);
+
+  const toggleAyah = useCallback(
+    (ayahNum: number) => {
+      if (activeAyah === ayahNum) {
+        if (playState === 'playing') {
+          audioRef.current?.pause();
+          setPlayState('paused');
+        } else if (playState === 'paused') {
+          audioRef.current?.play().catch(() => setPlayState('idle'));
+          setPlayState('playing');
+        }
+        return;
+      }
+      isPlayAllRef.current = false;
+      setIsPlayAll(false);
+      playAyah(ayahNum);
+    },
+    [activeAyah, playState, playAyah],
+  );
+
+  return { playState, activeAyah, isPlayAll, togglePlayAll, toggleAyah, stop };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Main SurahOverlay
 ══════════════════════════════════════════════════════════════ */
 export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
   const [visible, setVisible] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const ayahRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
-  /* Trigger slide-in on first paint */
+  const audio = useAudioPlayer(surah);
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
-  /* Scroll back to top whenever the surah changes via prev/next */
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
+    ayahRefs.current = {};
   }, [surah.number]);
 
-  /* Lock body scroll while overlay is open */
+  useEffect(() => {
+    if (audio.activeAyah !== null) {
+      ayahRefs.current[audio.activeAyah]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [audio.activeAyah]);
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -178,7 +316,6 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
     };
   }, []);
 
-  /* Escape key → close */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handleClose();
@@ -187,10 +324,15 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
     return () => window.removeEventListener('keydown', handler);
   });
 
-  /* Slide-out then call onClose */
   const handleClose = () => {
+    audio.stop();
     setVisible(false);
     setTimeout(onClose, 300);
+  };
+
+  const handleNavigate = (s: QuranSurah) => {
+    audio.stop();
+    onNavigate(s);
   };
 
   const prevSurah = surah.number > 1 ? allSurahs[surah.number - 2] : null;
@@ -199,13 +341,21 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
   const translation =
     TRANSLATIONS[surah.number] ?? surah.englishNameTranslation;
 
-  /*
-   * Show the standalone BismillahDivider ONLY when:
-   *   1. Not Surah 9 (At-Tawbah — never has Bismillah)
-   *   2. The API hasn't already included it as the first ayah text
-   *      (avoids the duplicate visible in Al-Falaq, Al-Nas, etc.)
-   */
-  const showBismillahDivider = false;
+  /* ─────────────────────────────────────────────────────────
+     Bismillah handling:
+     - If ayah 1 contains Bismillah → show it as a decorative
+       heading, skip it from the ayah list entirely.
+     - Ayah numbers stay correct (2, 3, 4… not 1, 2, 3…)
+     - Surah 1 (Al-Fatiha): Bismillah IS the real ayah 1 → keep
+     - Surah 9 (At-Tawbah): no Bismillah → keep all ayahs
+  ───────────────────────────────────────────────────────── */
+  const hasBismillahHeading = ayah1IsBismillah(surah);
+
+  /* Skip ayah 1 from the list when it's just the bismillah */
+  const visibleAyahs = hasBismillahHeading ? surah.ayahs.slice(1) : surah.ayahs;
+
+  const isListening =
+    audio.playState === 'playing' || audio.playState === 'loading';
 
   return (
     <div
@@ -222,7 +372,7 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
       role="dialog"
       aria-modal="true"
       aria-label={`Surah ${surah.englishName}`}>
-      {/* Ambient top glow */}
+      {/* Ambient glow */}
       <div
         style={{
           position: 'absolute',
@@ -237,9 +387,7 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
         }}
       />
 
-      {/* ══════════════════════════════════
-          TOP NAVIGATION BAR
-      ══════════════════════════════════ */}
+      {/* ── Top nav bar ── */}
       <div
         style={{
           flexShrink: 0,
@@ -257,7 +405,6 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
         }}>
         <BackButton onClick={handleClose} />
 
-        {/* Breadcrumb */}
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
           <span
             style={{
@@ -280,24 +427,21 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
           </span>
         </div>
 
-        {/* Prev / Next arrows */}
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           <NavArrow
             direction="prev"
             surah={prevSurah}
-            onClick={() => prevSurah && onNavigate(prevSurah)}
+            onClick={() => prevSurah && handleNavigate(prevSurah)}
           />
           <NavArrow
             direction="next"
             surah={nextSurah}
-            onClick={() => nextSurah && onNavigate(nextSurah)}
+            onClick={() => nextSurah && handleNavigate(nextSurah)}
           />
         </div>
       </div>
 
-      {/* ══════════════════════════════════
-          SCROLLABLE CONTENT
-      ══════════════════════════════════ */}
+      {/* ── Scrollable content ── */}
       <div
         ref={scrollRef}
         style={{
@@ -321,21 +465,238 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
             isMeccan={isMeccan}
           />
 
-          {/* Bismillah divider — only when the API hasn't already
-              included it inside the first ayah text */}
-          {showBismillahDivider && <BismillahDivider />}
+          {/* Audio player panel */}
+          <AudioPanel
+            playState={audio.playState}
+            activeAyah={audio.activeAyah}
+            isListening={isListening}
+            totalAyahs={visibleAyahs.length}
+            onTogglePlayAll={audio.togglePlayAll}
+          />
 
-          {/* Ayah list */}
-          <AyahList surah={surah} />
+          {/* ── Bismillah heading (not an ayah) ── */}
+          {hasBismillahHeading && (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '18px 16px',
+                marginBottom: 12,
+                fontSize: 'clamp(1.2rem, 2.5vw, 1.7rem)',
+                color: 'var(--gold)',
+                fontFamily: 'var(--font-crimson), serif',
+                direction: 'rtl',
+                lineHeight: 1.9,
+                textShadow: '0 0 20px rgba(201,168,76,0.22)',
+                background:
+                  'linear-gradient(135deg, rgba(201,168,76,0.06), transparent)',
+                border: '1px solid var(--border)',
+                borderRadius: 14,
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+              {/* top shimmer */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  background:
+                    'linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent)',
+                }}
+              />
+              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+            </div>
+          )}
 
-          {/* Bottom navigation */}
+          {/* ── Ayah list ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {visibleAyahs.map((ayah) => (
+              <AyahRow
+                key={ayah.number}
+                ref={(el) => {
+                  ayahRefs.current[ayah.numberInSurah] = el;
+                }}
+                number={ayah.numberInSurah}
+                text={ayah.text}
+                isActive={audio.activeAyah === ayah.numberInSurah}
+                playState={
+                  audio.activeAyah === ayah.numberInSurah
+                    ? audio.playState
+                    : 'idle'
+                }
+                onPlayToggle={() => audio.toggleAyah(ayah.numberInSurah)}
+              />
+            ))}
+          </div>
+
+          {/* Bottom nav */}
           <BottomNav
             prevSurah={prevSurah}
             nextSurah={nextSurah}
             onClose={handleClose}
-            onNavigate={onNavigate}
+            onNavigate={handleNavigate}
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   AUDIO PANEL
+══════════════════════════════════════════════ */
+function AudioPanel({
+  playState,
+  activeAyah,
+  isListening,
+  totalAyahs,
+  onTogglePlayAll,
+}: {
+  playState: PlayState;
+  activeAyah: number | null;
+  isListening: boolean;
+  totalAyahs: number;
+  onTogglePlayAll: () => void;
+}) {
+  return (
+    <div
+      style={{
+        marginBottom: 20,
+        padding: '18px 22px',
+        background: isListening
+          ? 'linear-gradient(135deg, rgba(45,212,191,0.07), rgba(17,21,40,0.95))'
+          : 'linear-gradient(135deg, rgba(201,168,76,0.06), rgba(17,21,40,0.95))',
+        border: `1px solid ${isListening ? 'rgba(45,212,191,0.3)' : 'var(--border)'}`,
+        borderRadius: 16,
+        transition: 'border-color 0.3s, background 0.3s',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: isListening
+            ? 'linear-gradient(90deg, transparent, rgba(45,212,191,0.5), transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent)',
+          transition: 'background 0.3s',
+        }}
+      />
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}>
+        {/* Play / Stop button */}
+        <button
+          type="button"
+          onClick={onTogglePlayAll}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '11px 24px',
+            borderRadius: 50,
+            border: `1px solid ${isListening ? 'rgba(45,212,191,0.5)' : 'rgba(201,168,76,0.45)'}`,
+            background: isListening
+              ? 'rgba(45,212,191,0.12)'
+              : 'rgba(201,168,76,0.1)',
+            color: isListening ? 'var(--teal)' : 'var(--gold2)',
+            fontFamily: 'var(--font-cinzel), serif',
+            fontSize: '0.88rem',
+            letterSpacing: '0.06em',
+            cursor: 'pointer',
+            transition: 'all 0.22s ease',
+            flexShrink: 0,
+          }}>
+          {playState === 'loading' && activeAyah === null ? (
+            <>
+              <SpinnerIcon color="var(--gold2)" /> Loading…
+            </>
+          ) : isListening ? (
+            <>
+              <StopIcon /> Stop
+            </>
+          ) : (
+            <>
+              <HeadphonesIcon /> Listen to Surah
+            </>
+          )}
+        </button>
+
+        {/* Now-playing status */}
+        {activeAyah !== null ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {playState === 'playing' && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 3,
+                  alignItems: 'flex-end',
+                  height: 20,
+                }}>
+                {[0, 0.15, 0.3, 0.15, 0].map((delay, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      display: 'inline-block',
+                      width: 3,
+                      borderRadius: 3,
+                      background: 'var(--teal)',
+                      animationName: 'audioWave',
+                      animationDuration: '0.75s',
+                      animationTimingFunction: 'ease-in-out',
+                      animationIterationCount: 'infinite',
+                      animationDelay: `${delay}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background:
+                  playState === 'loading' ? 'var(--gold2)' : 'var(--teal)',
+                boxShadow: `0 0 8px ${playState === 'loading' ? 'var(--gold2)' : 'var(--teal)'}`,
+                display: 'inline-block',
+                animationName: 'audioPulse',
+                animationDuration: '1.4s',
+                animationTimingFunction: 'ease-in-out',
+                animationIterationCount: 'infinite',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: 'var(--font-jetbrains), monospace',
+                fontSize: '0.75rem',
+                color: playState === 'loading' ? 'var(--gold2)' : 'var(--teal)',
+              }}>
+              {playState === 'loading' ? 'Loading' : 'Playing'} ayah{' '}
+              {activeAyah} / {totalAyahs}
+            </span>
+          </div>
+        ) : (
+          <span
+            style={{
+              fontFamily: 'var(--font-jetbrains), monospace',
+              fontSize: '0.72rem',
+              color: 'var(--muted)',
+              letterSpacing: '0.04em',
+            }}>
+            Abdul Basit Abdus Samad · Murattal
+          </span>
+        )}
       </div>
     </div>
   );
@@ -354,8 +715,7 @@ function SurahHeader({
   isMeccan: boolean;
 }) {
   return (
-    <div style={{ textAlign: 'center', marginBottom: 36 }}>
-      {/* Number ring */}
+    <div style={{ textAlign: 'center', marginBottom: 28 }}>
       <div
         style={{
           display: 'inline-flex',
@@ -374,7 +734,6 @@ function SurahHeader({
         {surah.number}
       </div>
 
-      {/* Arabic name */}
       <div
         style={{
           fontSize: 'clamp(2rem, 5vw, 3.2rem)',
@@ -388,7 +747,6 @@ function SurahHeader({
         {surah.name}
       </div>
 
-      {/* English name */}
       <h2
         style={{
           fontFamily: 'var(--font-cinzel), serif',
@@ -404,7 +762,6 @@ function SurahHeader({
         {surah.englishName}
       </h2>
 
-      {/* Translation meaning */}
       <div
         style={{
           fontFamily: 'var(--font-crimson), serif',
@@ -416,7 +773,6 @@ function SurahHeader({
         {translation}
       </div>
 
-      {/* Meta badges */}
       <div
         style={{
           display: 'flex',
@@ -437,7 +793,6 @@ function SurahHeader({
           }}>
           {isMeccan ? '🕋 Makkah' : '🕌 Madinah'}
         </span>
-
         <span
           style={{
             fontFamily: 'var(--font-jetbrains), monospace',
@@ -451,7 +806,6 @@ function SurahHeader({
           }}>
           {surah.ayahs.length} Ayahs
         </span>
-
         {surah.ayahs[0]?.juz && (
           <span
             style={{
@@ -476,106 +830,173 @@ function SurahHeader({
 }
 
 /* ══════════════════════════════════════════════
-   BISMILLAH DIVIDER
-   Rendered only when the API hasn't already
-   included it inside the first ayah.
+   AYAH ROW
 ══════════════════════════════════════════════ */
-function BismillahDivider() {
-  return (
-    <div
-      style={{
-        textAlign: 'center',
-        padding: '20px 16px',
-        marginBottom: 24,
-        background:
-          'linear-gradient(135deg, rgba(201,168,76,0.06), transparent)',
-        border: '1px solid var(--border)',
-        borderRadius: 14,
-        fontSize: 'clamp(1.3rem, 2.8vw, 1.8rem)',
-        color: 'var(--gold)',
-        fontFamily: 'var(--font-crimson), serif',
-        direction: 'rtl',
-        lineHeight: 1.9,
-        textShadow: '0 0 20px rgba(201,168,76,0.22)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 1,
-          background:
-            'linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent)',
-        }}
-      />
-      بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════
-   AYAH LIST
-══════════════════════════════════════════════ */
-function AyahList({ surah }: { surah: QuranSurah }) {
-  const ayahs = surah.ayahs.filter((ayah) => {
-    // Surah 1 (Al-Fatiha): ayah 1 IS the Bismillah — keep it, show all 7 ayahs
-    if (surah.number === 1) return true;
-    // All other surahs: strip ayah 1 if it starts with Bismillah (API prepends it)
-    if (ayah.numberInSurah === 1) {
-      return !ayah.text.startsWith('بِسْمِ');
-    }
-    return true;
-  });
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {ayahs.map((ayah) => (
-        <AyahRow
-          key={ayah.number}
-          number={ayah.numberInSurah}
-          text={ayah.text}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ── Single ayah row ── */
-function AyahRow({ number, text }: { number: number; text: string }) {
+const AyahRow = forwardRef<
+  HTMLDivElement,
+  {
+    number: number;
+    text: string;
+    isActive: boolean;
+    playState: PlayState;
+    onPlayToggle: () => void;
+  }
+>(({ number, text, isActive, playState, onPlayToggle }, ref) => {
   const [hov, setHov] = useState(false);
+  const isPlaying = isActive && playState === 'playing';
+  const isLoading = isActive && playState === 'loading';
 
   return (
     <div
+      ref={ref}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 40px',
-        gap: 16,
-        padding: '18px 16px',
+        gridTemplateColumns: '44px 1fr',
+        gap: 14,
+        padding: '16px 14px',
         borderRadius: 12,
-        border: `1px solid ${hov ? 'rgba(201,168,76,0.25)' : 'var(--border)'}`,
-        background: hov ? 'rgba(201,168,76,0.03)' : 'var(--bg2)',
-        transition: 'border-color 0.18s, background 0.18s',
+        border: `1px solid ${
+          isActive
+            ? 'rgba(201,168,76,0.45)'
+            : hov
+              ? 'rgba(201,168,76,0.22)'
+              : 'var(--border)'
+        }`,
+        background: isActive
+          ? 'linear-gradient(135deg, rgba(201,168,76,0.09), rgba(17,21,40,0.97))'
+          : hov
+            ? 'rgba(201,168,76,0.03)'
+            : 'var(--bg2)',
+        boxShadow: isActive ? '0 0 24px rgba(201,168,76,0.08)' : 'none',
+        transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
         direction: 'rtl',
       }}>
-      {/* Arabic text */}
+      {/* Left col: play button + wave */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 7,
+          paddingTop: 4,
+        }}>
+        <button
+          type="button"
+          onClick={onPlayToggle}
+          aria-label={
+            isPlaying ? `Pause ayah ${number}` : `Play ayah ${number}`
+          }
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: `1px solid ${
+              isPlaying
+                ? 'rgba(45,212,191,0.55)'
+                : isActive
+                  ? 'rgba(201,168,76,0.45)'
+                  : hov
+                    ? 'rgba(201,168,76,0.28)'
+                    : 'var(--border)'
+            }`,
+            background: isPlaying
+              ? 'rgba(45,212,191,0.12)'
+              : isActive
+                ? 'rgba(201,168,76,0.1)'
+                : 'transparent',
+            cursor: 'pointer',
+            transition: 'all 0.18s',
+          }}>
+          {isLoading ? (
+            <SpinnerIcon size={12} color="var(--gold2)" />
+          ) : isPlaying ? (
+            <span style={{ display: 'flex', gap: 2 }}>
+              <span
+                style={{
+                  width: 3,
+                  height: 11,
+                  background: 'var(--teal)',
+                  borderRadius: 2,
+                  display: 'block',
+                }}
+              />
+              <span
+                style={{
+                  width: 3,
+                  height: 11,
+                  background: 'var(--teal)',
+                  borderRadius: 2,
+                  display: 'block',
+                }}
+              />
+            </span>
+          ) : (
+            <span
+              style={{
+                fontFamily: 'var(--font-jetbrains), monospace',
+                fontSize: number >= 100 ? '0.48rem' : '0.58rem',
+                color: isActive
+                  ? 'var(--gold2)'
+                  : hov
+                    ? 'var(--gold)'
+                    : 'var(--muted)',
+                lineHeight: 1,
+                transition: 'color 0.18s',
+              }}>
+              {number}
+            </span>
+          )}
+        </button>
+
+        {isPlaying && (
+          <div
+            style={{
+              display: 'flex',
+              gap: 2,
+              alignItems: 'flex-end',
+              height: 16,
+            }}>
+            {[0, 0.18, 0.36, 0.18].map((delay, i) => (
+              <span
+                key={i}
+                style={{
+                  display: 'inline-block',
+                  width: 3,
+                  borderRadius: 3,
+                  background: 'var(--teal)',
+                  animationName: 'audioWave',
+                  animationDuration: '0.75s',
+                  animationTimingFunction: 'ease-in-out',
+                  animationIterationCount: 'infinite',
+                  animationDelay: `${delay}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Right col: Arabic text */}
       <p
         style={{
           margin: 0,
           fontSize: 'clamp(1.15rem, 2.3vw, 1.5rem)',
           lineHeight: 2.2,
-          color: 'var(--text)',
+          color: isActive ? 'var(--gold3)' : 'var(--text)',
           textAlign: 'right',
           direction: 'rtl',
           fontFamily: 'var(--font-crimson), serif',
           fontFeatureSettings: '"liga" 1, "kern" 1',
+          textShadow: isActive ? '0 0 18px rgba(201,168,76,0.22)' : 'none',
+          transition: 'color 0.22s, text-shadow 0.22s',
         }}>
         {text}
-        {/* Ayah end ornament */}
         <span
           style={{
             display: 'inline-flex',
@@ -583,64 +1004,20 @@ function AyahRow({ number, text }: { number: number; text: string }) {
             justifyContent: 'center',
             marginRight: 8,
             marginLeft: 4,
-            fontSize: '0.78rem',
-            color: 'var(--gold)',
-            opacity: 0.6,
+            fontSize: '0.76rem',
+            color: isActive ? 'var(--gold2)' : 'var(--gold)',
+            opacity: isActive ? 0.8 : 0.5,
             fontFamily: 'var(--font-jetbrains), monospace',
             verticalAlign: 'middle',
+            transition: 'color 0.22s, opacity 0.22s',
           }}>
           ۝{number}
         </span>
       </p>
-
-      {/* Ayah number badge */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          paddingTop: 6,
-          flexShrink: 0,
-        }}>
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-          }}>
-          <svg
-            width="30"
-            height="30"
-            viewBox="0 0 30 30"
-            style={{ position: 'absolute' }}>
-            <polygon
-              points="15,1 17.9,6 23,6 23,11.1 27,15 23,18.9 23,24 17.9,24 15,29 12.1,24 7,24 7,18.9 3,15 7,11.1 7,6 12.1,6"
-              fill="rgba(201,168,76,0.06)"
-              stroke={hov ? 'rgba(201,168,76,0.4)' : 'rgba(201,168,76,0.18)'}
-              strokeWidth="1"
-              style={{ transition: 'stroke 0.18s' }}
-            />
-          </svg>
-          <span
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: number >= 100 ? '0.52rem' : '0.62rem',
-              color: hov ? 'var(--gold2)' : 'var(--gold)',
-              lineHeight: 1,
-              transition: 'color 0.18s',
-            }}>
-            {number}
-          </span>
-        </div>
-      </div>
     </div>
   );
-}
+});
+AyahRow.displayName = 'AyahRow';
 
 /* ══════════════════════════════════════════════
    BOTTOM NAVIGATION
@@ -670,11 +1047,9 @@ function BottomNav({
           ← {prevSurah.englishName}
         </FootNavButton>
       )}
-
       <FootNavButton onClick={onClose} muted>
         ✕ Close
       </FootNavButton>
-
       {nextSurah && (
         <FootNavButton onClick={() => onNavigate(nextSurah)}>
           {nextSurah.englishName} →
@@ -710,8 +1085,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
         transition: 'color 0.18s',
         flexShrink: 0,
       }}>
-      <span style={{ fontSize: '1rem', lineHeight: 1 }}>←</span>
-      Back
+      <span style={{ fontSize: '1rem', lineHeight: 1 }}>←</span> Back
     </button>
   );
 }
@@ -727,14 +1101,13 @@ function NavArrow({
 }) {
   const [hov, setHov] = useState(false);
   if (!surah) return <div style={{ width: 32 }} />;
-
   return (
     <button
       type="button"
       onClick={onClick}
+      title={surah.englishName}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      title={surah.englishName}
       style={{
         width: 32,
         height: 32,
@@ -799,5 +1172,56 @@ function FootNavButton({
       }}>
       {children}
     </button>
+  );
+}
+
+function HeadphonesIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
+      <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  );
+}
+
+function SpinnerIcon({
+  size = 14,
+  color = 'currentColor',
+}: {
+  size?: number;
+  color?: string;
+}) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        border: '2px solid rgba(255,255,255,0.2)',
+        borderTopColor: color,
+        animationName: 'spin',
+        animationDuration: '0.7s',
+        animationTimingFunction: 'linear',
+        animationIterationCount: 'infinite',
+      }}
+    />
   );
 }
