@@ -1,9 +1,10 @@
 'use client';
 
-import { PRAYER_KEYS, PRAYER_NAMES, ibadahItems } from '@/lib/ramadan/constants';
-import type { PrayerTimings } from '@/lib/ramadan/types';
-import { formatTime } from '@/lib/ramadan/utils';
-import { TrackerItems } from '../TrackerItems';
+import { CloudSun, MapPin, Moon, Sparkles, Sun, Sunrise, Sunset, Clock } from 'lucide-react';
+import { PRAYER_KEYS, PRAYER_NAMES, ibadahItems } from '@/lib/constants';
+import type { PrayerTimings } from '@/lib/types';
+import { formatTime } from '@/lib/utils';
+import { TrackerItems } from '../tracker/TrackerItems';
 
 type Props = {
   active: boolean;
@@ -18,6 +19,15 @@ type Props = {
   trackerDone: string[];
   onToggleTracker: (id: string) => void;
 };
+
+const PRAYER_ICONS = {
+  Fajr: Sunrise,
+  Sunrise: Sunrise,
+  Dhuhr: Sun,
+  Asr: CloudSun,
+  Maghrib: Sunset,
+  Isha: Moon,
+} as const;
 
 export function HomeTab({
   active,
@@ -59,21 +69,29 @@ export function HomeTab({
           </div>
         </div>
         <div className="location-note">
-          📍 Location: <span>{locDisplay}</span>
+          <MapPin size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Location: <span>{locDisplay}</span>
         </div>
       </div>
 
-      <div className="section-title">🕌 Prayer Times</div>
+      <div className="section-title">
+        <Clock size={16} /> Prayer Times
+      </div>
       <div className="prayer-grid" id="prayerGrid">
-        {PRAYER_NAMES.map((name, i) => (
-          <div key={name} className={'prayer-card' + (activePrayerIdx === i ? ' active' : '')}>
-            <div className="prayer-name">{name}</div>
-            <div className="prayer-time">{prayerData ? formatTime(prayerData[PRAYER_KEYS[i]]) : '—'}</div>
-          </div>
-        ))}
+        {PRAYER_NAMES.map((name, i) => {
+          const PrayerIcon = PRAYER_ICONS[name as keyof typeof PRAYER_ICONS];
+          return (
+            <div key={name} className={'prayer-card' + (activePrayerIdx === i ? ' active' : '')}>
+              {PrayerIcon && <PrayerIcon size={18} style={{ marginBottom: 4, opacity: 0.8 }} />}
+              <div className="prayer-name">{name}</div>
+              <div className="prayer-time">{prayerData ? formatTime(prayerData[PRAYER_KEYS[i]]) : '—'}</div>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="section-title">✨ Today&apos;s Ibadah</div>
+      <div className="section-title">
+        <Sparkles size={16} /> Today&apos;s Ibadah
+      </div>
       <div className="card" style={{ marginBottom: 0 }}>
         <div className="tracker-grid" id="quickTracker">
           <TrackerItems items={quickItems} doneIds={trackerDone} onToggle={onToggleTracker} />

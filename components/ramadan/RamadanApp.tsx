@@ -6,17 +6,17 @@ import { useJuzRead } from '@/hooks/useJuzRead';
 import { usePrayerSchedule } from '@/hooks/usePrayerSchedule';
 import { useRamadanClock } from '@/hooks/useRamadanClock';
 import { useStars } from '@/hooks/useStars';
-import type { TabId } from '@/lib/ramadan/types';
-import { AppFooter } from './AppFooter';
-import { AppHeader } from './AppHeader';
-import { StarsBackground } from './StarsBackground';
-import { TabBar } from './TabBar';
-import { CalendarTab } from './tabs/CalendarTab';
-import { DuasTab } from './tabs/DuasTab';
-import { HomeTab } from './tabs/HomeTab';
-import { QuranTab } from './tabs/QuranTab';
-import { TrackerTab } from './tabs/TrackerTab';
-import { ZakatTab } from './tabs/ZakatTab';
+import type { TabId } from '@/lib/types';
+import { AppFooter } from './layout/AppFooter';
+import { AppHeader } from './layout/AppHeader';
+import { StarsBackground } from './layout/StarsBackground';
+import { TabBar } from './layout/TabBar';
+import { CalendarTab } from './features/calendar/CalendarTab';
+import { DuasTab } from './features/duas/DuasTab';
+import { HomeTab } from './features/home/HomeTab';
+import { QuranTab } from './features/quran/QuranTab';
+import { TrackerTab } from './features/tracker/TrackerTab';
+import { ZakatTab } from './features/zakat/ZakatTab';
 
 export function RamadanApp() {
   const stars = useStars();

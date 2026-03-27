@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { trackerKey } from '@/lib/ramadan/utils';
+import { trackerKey } from '@/lib/utils';
 
 export function useIbadahTracker(nowTick: number) {
   const [trackerDone, setTrackerDone] = useState<string[]>([]);

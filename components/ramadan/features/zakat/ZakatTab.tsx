@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Coins, Globe, Home, Info, Leaf, BookOpen, Users } from 'lucide-react';
 
 type ZakatForm = {
   currency: string;
@@ -47,7 +48,9 @@ export function ZakatTab({ active }: Props) {
 
   return (
     <div className={'tab-section' + (active ? ' active' : '')} id="tab-zakat" role="tabpanel">
-      <div className="section-title">💰 Zakat Calculator</div>
+      <div className="section-title">
+        <Coins size={16} /> Zakat Calculator
+      </div>
       <div className="main-grid">
         <div className="card">
           <div className="zakat-form">
@@ -58,16 +61,16 @@ export function ZakatTab({ active }: Props) {
                 value={zakat.currency}
                 onChange={(e) => setZakat((z) => ({ ...z, currency: e.target.value }))}
               >
-                <option value="PKR">🇵🇰 PKR – Pakistani Rupee</option>
-                <option value="USD">🇺🇸 USD – US Dollar</option>
-                <option value="GBP">🇬🇧 GBP – British Pound</option>
-                <option value="EUR">🇪🇺 EUR – Euro</option>
-                <option value="SAR">🇸🇦 SAR – Saudi Riyal</option>
-                <option value="AED">🇦🇪 AED – UAE Dirham</option>
+                <option value="PKR">PKR – Pakistani Rupee</option>
+                <option value="USD">USD – US Dollar</option>
+                <option value="GBP">GBP – British Pound</option>
+                <option value="EUR">EUR – Euro</option>
+                <option value="SAR">SAR – Saudi Riyal</option>
+                <option value="AED">AED – UAE Dirham</option>
               </select>
             </div>
             <div className="input-group">
-              <label htmlFor="cash">Cash & Bank Savings</label>
+              <label htmlFor="cash">Cash &amp; Bank Savings</label>
               <input
                 id="cash"
                 type="number"
@@ -140,7 +143,7 @@ export function ZakatTab({ active }: Props) {
         <div className="card">
           <div style={{ marginBottom: 18 }}>
             <div className="section-title" style={{ marginBottom: 10 }}>
-              📌 Nisab Threshold (2025)
+              <Info size={16} /> Nisab Threshold (2025)
             </div>
             <div className="info-box">
               <strong style={{ color: 'var(--gold2)' }}>Gold Nisab:</strong> Value of 87.48g of gold
@@ -164,20 +167,20 @@ export function ZakatTab({ active }: Props) {
           </div>
           <div style={{ marginTop: 18 }}>
             <div className="section-title" style={{ marginBottom: 10 }}>
-              🌍 Suggested Recipients
+              <Globe size={16} /> Suggested Recipients
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
-                🏠 Local Islamic charity / mosque
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
+                <Home size={16} style={{ flexShrink: 0, color: 'var(--gold)' }} /> Local Islamic charity / mosque
               </div>
-              <div style={{ padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
-                🌱 Edhi Foundation / Akhuwat
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
+                <Leaf size={16} style={{ flexShrink: 0, color: 'var(--teal)' }} /> Edhi Foundation / Akhuwat
               </div>
-              <div style={{ padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
-                📚 Islamic Relief / Human Appeal
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
+                <BookOpen size={16} style={{ flexShrink: 0, color: 'var(--gold2)' }} /> Islamic Relief / Human Appeal
               </div>
-              <div style={{ padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
-                👨‍👩‍👧 Needy families in your community
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 10, fontSize: '0.88rem', color: 'var(--silver)' }}>
+                <Users size={16} style={{ flexShrink: 0, color: 'var(--silver)' }} /> Needy families in your community
               </div>
             </div>
           </div>

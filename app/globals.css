@@ -103,9 +103,9 @@ header {
 }
 
 .crescent-moon {
-  font-size: 3rem;
   display: block;
   margin: 0 auto 12px;
+  color: var(--gold);
   animation: moonGlow 4s ease-in-out infinite;
   filter: drop-shadow(0 0 18px var(--gold));
 }
@@ -123,7 +123,13 @@ header {
 header h1 {
   font-family: var(--font-cinzel), serif;
   font-size: clamp(1.8rem, 4vw, 3rem);
-  background: linear-gradient(135deg, var(--gold), var(--gold2), var(--gold3), var(--gold));
+  background: linear-gradient(
+    135deg,
+    var(--gold),
+    var(--gold2),
+    var(--gold3),
+    var(--gold)
+  );
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -187,7 +193,11 @@ header h1 {
 }
 
 .countdown-card {
-  background: linear-gradient(135deg, rgba(12, 14, 26, 0.95), rgba(17, 21, 40, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(12, 14, 26, 0.95),
+    rgba(17, 21, 40, 0.95)
+  );
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 36px;
@@ -195,14 +205,20 @@ header h1 {
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 60px rgba(201, 168, 76, 0.07), 0 24px 60px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 60px rgba(201, 168, 76, 0.07),
+    0 24px 60px rgba(0, 0, 0, 0.5);
 }
 
 .countdown-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(201, 168, 76, 0.08) 0%, transparent 70%);
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(201, 168, 76, 0.08) 0%,
+    transparent 70%
+  );
 }
 
 .countdown-label {
@@ -291,6 +307,9 @@ header h1 {
   color: var(--gold);
   margin-bottom: 16px;
   letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -711,6 +730,10 @@ header h1 {
   }
 }
 
+.lucide-spin {
+  animation: spin 0.7s linear infinite;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
@@ -728,6 +751,10 @@ header h1 {
   padding: 10px 14px;
   background: transparent;
   border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   border-radius: 10px;
   color: var(--muted);
   font-family: var(--font-crimson), serif;
@@ -739,7 +766,11 @@ header h1 {
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, rgba(201, 168, 76, 0.15), rgba(201, 168, 76, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(201, 168, 76, 0.15),
+    rgba(201, 168, 76, 0.05)
+  );
   color: var(--gold2);
   border: 1px solid var(--border);
 }
@@ -933,7 +964,11 @@ header h1 {
 }
 
 .surah-details {
-  background: linear-gradient(135deg, rgba(12, 14, 26, 0.92), rgba(17, 21, 40, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(12, 14, 26, 0.92),
+    rgba(17, 21, 40, 0.95)
+  );
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
@@ -1082,7 +1117,9 @@ header h1 {
   color: var(--gold3);
   text-align: right;
   direction: rtl;
-  font-feature-settings: 'liga' 1, 'kern' 1;
+  font-feature-settings:
+    'liga' 1,
+    'kern' 1;
 }
 
 @media (max-width: 600px) {
@@ -1100,5 +1137,54 @@ header h1 {
   .surah-details summary {
     position: relative;
     padding-right: 36px;
+  }
+}
+
+/* Surah card staggered entrance */
+@keyframes surahCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Skeleton loading pulse */
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Audio wave bars — animate up/down */
+@keyframes audioWave {
+  0%,
+  100% {
+    height: 3px;
+    opacity: 0.5;
+  }
+  50% {
+    height: 14px;
+    opacity: 1;
+  }
+}
+
+/* Pulsing dot — now-playing indicator */
+@keyframes audioPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
   }
 }

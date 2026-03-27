@@ -1,4 +1,4 @@
-import type { EssentialDua, IbadahItem, TabId, Verse } from './types';
+import type { EssentialDua, IbadahItem, TabId, TabItem, Verse } from './types';
 
 export const PRAYER_NAMES = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
 export const PRAYER_KEYS = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
@@ -48,16 +48,16 @@ export const verses: Verse[] = [
 ];
 
 export const ibadahItems: IbadahItem[] = [
-  { id: 'fajr', label: 'Fajr Salah', icon: '🌅' },
-  { id: 'dhuhr', label: 'Dhuhr Salah', icon: '☀️' },
-  { id: 'asr', label: 'Asr Salah', icon: '🌤' },
-  { id: 'maghrib', label: 'Maghrib Salah', icon: '🌆' },
-  { id: 'isha', label: 'Isha Salah', icon: '🌙' },
-  { id: 'quran', label: 'Quran Reading', icon: '📖' },
-  { id: 'dhikr', label: 'Morning Dhikr', icon: '📿' },
-  { id: 'sadaqah', label: 'Sadaqah Given', icon: '💝' },
-  { id: 'tarawih', label: 'Tarawih Prayer', icon: '🕌' },
-  { id: 'niyah', label: 'Made Niyyah (Suhoor)', icon: '🤍' },
+  { id: 'fajr', label: 'Fajr Salah', icon: 'Sunrise' },
+  { id: 'dhuhr', label: 'Dhuhr Salah', icon: 'Sun' },
+  { id: 'asr', label: 'Asr Salah', icon: 'CloudSun' },
+  { id: 'maghrib', label: 'Maghrib Salah', icon: 'Sunset' },
+  { id: 'isha', label: 'Isha Salah', icon: 'Moon' },
+  { id: 'quran', label: 'Quran Reading', icon: 'BookOpen' },
+  { id: 'dhikr', label: 'Morning Dhikr', icon: 'RefreshCw' },
+  { id: 'sadaqah', label: 'Sadaqah Given', icon: 'Heart' },
+  { id: 'tarawih', label: 'Tarawih Prayer', icon: 'Moon' },
+  { id: 'niyah', label: 'Made Niyyah (Suhoor)', icon: 'Feather' },
 ];
 
 export const essentialDuas: EssentialDua[] = [
@@ -132,11 +132,11 @@ export const specialDays: Record<number, { title: string; note: string }> = {
   },
 };
 
-export const TAB_ITEMS: { id: TabId; label: string }[] = [
-  { id: 'home', label: '🌙 Home' },
-  { id: 'quran', label: '📖 Quran' },
-  { id: 'duas', label: '🤲 Duas' },
-  { id: 'tracker', label: '✅ Tracker' },
-  { id: 'zakat', label: '💰 Zakat' },
-  { id: 'calendar', label: '📆 Calendar' },
+export const TAB_ITEMS: TabItem[] = [
+  { id: 'home', label: 'Home', icon: 'Moon' },
+  { id: 'quran', label: 'Quran', icon: 'BookOpen' },
+  { id: 'duas', label: 'Duas', icon: 'HandHeart' },
+  { id: 'tracker', label: 'Tracker', icon: 'ClipboardCheck' },
+  { id: 'zakat', label: 'Zakat', icon: 'Coins' },
+  { id: 'calendar', label: 'Calendar', icon: 'Calendar' },
 ];

@@ -1,8 +1,9 @@
 'use client';
 
-import { ibadahItems } from '@/lib/ramadan/constants';
-import { buildWeekBars } from '@/lib/ramadan/utils';
-import { TrackerItems } from '../TrackerItems';
+import { BarChart3, ClipboardCheck, RefreshCw } from 'lucide-react';
+import { ibadahItems } from '@/lib/constants';
+import { buildWeekBars } from '@/lib/utils';
+import { TrackerItems } from './TrackerItems';
 
 type Props = {
   active: boolean;
@@ -17,7 +18,9 @@ export function TrackerTab({ active, trackerDone, onToggleTracker, onResetTracke
 
   return (
     <div className={'tab-section' + (active ? ' active' : '')} id="tab-tracker" role="tabpanel">
-      <div className="section-title">✅ Daily Ibadah Tracker</div>
+      <div className="section-title">
+        <ClipboardCheck size={16} /> Daily Ibadah Tracker
+      </div>
       <div className="card">
         <div className="tracker-grid" id="fullTracker">
           <TrackerItems items={ibadahItems} doneIds={trackerDone} onToggle={onToggleTracker} />
@@ -31,13 +34,13 @@ export function TrackerTab({ active, trackerDone, onToggleTracker, onResetTracke
           </span>
           <span>{fullPct}%</span>
         </div>
-        <button type="button" className="refresh-btn" style={{ marginTop: 14 }} onClick={onResetTracker}>
-          ↺ Reset Day
+        <button type="button" className="refresh-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={onResetTracker}>
+          <RefreshCw size={14} /> Reset Day
         </button>
       </div>
 
       <div className="section-title" style={{ marginTop: 24 }}>
-        📊 Weekly Progress
+        <BarChart3 size={16} /> Weekly Progress
       </div>
       <div className="card">
         <div

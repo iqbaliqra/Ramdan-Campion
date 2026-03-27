@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { StarSpec } from '@/lib/ramadan/types';
+import type { StarSpec } from '@/lib/types';
 
 export function useStars() {
   const [stars, setStars] = useState<StarSpec[]>([]);
