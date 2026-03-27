@@ -4,3 +4,8 @@ out
 *.log
 .env*.local
 vercel.json
+config.bat
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
+branch_structure.json
