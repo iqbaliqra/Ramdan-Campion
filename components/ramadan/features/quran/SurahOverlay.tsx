@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, Fragment, useMemo } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Building2, ChevronLeft, ChevronRight, Headphones, Square, X } from 'lucide-react';
 import type { QuranSurah } from '@/lib/quran-api';
@@ -17,10 +17,9 @@ function ayahAudioUrl(surahNum: number, ayahNum: number): string {
   return `https://everyayah.com/data/Abdul_Basit_Murattal_192kbps/${s}${a}.mp3`;
 }
 
-function ayah1IsBismillah(surah: QuranSurah): boolean {
-  if (surah.number === 1 || surah.number === 9) return false;
-  const text = surah.ayahs[0]?.text ?? '';
-  return text.includes('ٱلرَّحِيمِ') || text.includes('الرَّحِيمِ');
+/** Every surah except Al-Fatihah (1) and At-Tawbah (9) opens with Bismillah as its own ayah in standard Uthmani text. */
+function surahHasStandaloneBismillahAyah(surah: QuranSurah): boolean {
+  return surah.number !== 1 && surah.number !== 9;
 }
 
 const TRANSLATIONS: Record<number, string> = {
@@ -58,6 +57,31 @@ const TRANSLATIONS: Record<number, string> = {
 
 type PlayState = 'idle' | 'loading' | 'playing' | 'paused';
 
+type PlaybackProgress = { currentTime: number; duration: number };
+
+function splitAyahWords(text: string): string[] {
+  return text.trim().split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Map playback position to word index. Audio has no word timestamps; we spread time
+ * proportionally by word length (grapheme count) for a karaoke-like effect.
+ */
+function getKaraokeWordIndex(currentTime: number, duration: number, words: string[]): number {
+  if (words.length === 0) return -1;
+  if (!(duration > 0) || !Number.isFinite(duration)) return 0;
+  const t = Math.min(1, Math.max(0, currentTime / duration));
+  const weights = words.map((w) => Math.max(1, [...w].length));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let cumulative = 0;
+  for (let i = 0; i < words.length; i++) {
+    cumulative += weights[i];
+    const end = cumulative / total;
+    if (t < end) return i;
+  }
+  return words.length - 1;
+}
+
 type Props = {
   surah: QuranSurah;
   allSurahs: QuranSurah[];
@@ -72,6 +96,7 @@ function useAudioPlayer(surah: QuranSurah) {
   const [playState, setPlayState] = useState<PlayState>('idle');
   const [activeAyah, setActiveAyah] = useState<number | null>(null);
   const [isPlayAll, setIsPlayAll] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState<PlaybackProgress | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isPlayAllRef = useRef(false);
@@ -85,6 +110,7 @@ function useAudioPlayer(surah: QuranSurah) {
       audioRef.current.oncanplay = null;
       audioRef.current.onended = null;
       audioRef.current.onerror = null;
+      audioRef.current.onloadedmetadata = null;
       audioRef.current.pause();
       audioRef.current.src = '';
       audioRef.current = null;
@@ -93,6 +119,7 @@ function useAudioPlayer(surah: QuranSurah) {
     setActiveAyah(null);
     setIsPlayAll(false);
     isPlayAllRef.current = false;
+    setPlaybackProgress(null);
   }, []);
 
   useEffect(() => { stop(); }, [surah.number, stop]);
@@ -103,30 +130,46 @@ function useAudioPlayer(surah: QuranSurah) {
       audioRef.current.oncanplay = null;
       audioRef.current.onended = null;
       audioRef.current.onerror = null;
+      audioRef.current.onloadedmetadata = null;
       audioRef.current.pause();
       audioRef.current = null;
     }
 
     setActiveAyah(ayahNum);
     setPlayState('loading');
+    setPlaybackProgress({ currentTime: 0, duration: 0 });
 
     const audio = new Audio();
     audioRef.current = audio;
 
+    const syncProgress = () => {
+      const d = audio.duration;
+      setPlaybackProgress({
+        currentTime: audio.currentTime,
+        duration: Number.isFinite(d) ? d : 0,
+      });
+    };
+
+    audio.onloadedmetadata = syncProgress;
+
     audio.oncanplay = () => {
       setPlayState('playing');
+      syncProgress();
       audio.play().catch(() => {
         setPlayState('idle');
         setActiveAyah(null);
+        setPlaybackProgress(null);
       });
     };
 
     audio.onerror = () => {
       setPlayState('idle');
       setActiveAyah(null);
+      setPlaybackProgress(null);
     };
 
     audio.onended = () => {
+      setPlaybackProgress(null);
       if (!isPlayAllRef.current) {
         setPlayState('idle');
         setActiveAyah(null);
@@ -153,7 +196,7 @@ function useAudioPlayer(surah: QuranSurah) {
       stop();
       return;
     }
-    const hasBismillah = ayah1IsBismillah(surahRef.current);
+    const hasBismillah = surahHasStandaloneBismillahAyah(surahRef.current);
     const startAyah = hasBismillah ? 2 : 1;
     isPlayAllRef.current = true;
     setIsPlayAll(true);
@@ -166,6 +209,13 @@ function useAudioPlayer(surah: QuranSurah) {
         if (playState === 'playing') {
           audioRef.current?.pause();
           setPlayState('paused');
+          if (audioRef.current) {
+            const d = audioRef.current.duration;
+            setPlaybackProgress({
+              currentTime: audioRef.current.currentTime,
+              duration: Number.isFinite(d) ? d : 0,
+            });
+          }
         } else if (playState === 'paused') {
           audioRef.current?.play().catch(() => setPlayState('idle'));
           setPlayState('playing');
@@ -179,7 +229,29 @@ function useAudioPlayer(surah: QuranSurah) {
     [activeAyah, playState, playAyah],
   );
 
-  return { playState, activeAyah, isPlayAll, togglePlayAll, toggleAyah, stop };
+  useEffect(() => {
+    if (playState !== 'playing' || !audioRef.current) return;
+    let cancelled = false;
+    let rafId = 0;
+    const tick = () => {
+      if (cancelled) return;
+      const a = audioRef.current;
+      if (!a || a.paused) return;
+      const d = a.duration;
+      setPlaybackProgress({
+        currentTime: a.currentTime,
+        duration: Number.isFinite(d) ? d : 0,
+      });
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+    };
+  }, [playState, activeAyah]);
+
+  return { playState, activeAyah, isPlayAll, playbackProgress, togglePlayAll, toggleAyah, stop };
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -241,8 +313,8 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
   const isMeccan = surah.revelationType === 'Meccan';
   const translation = TRANSLATIONS[surah.number] ?? surah.englishNameTranslation;
 
-  const hasBismillahHeading = ayah1IsBismillah(surah);
-  const visibleAyahs = hasBismillahHeading ? surah.ayahs.slice(1) : surah.ayahs;
+  const omitLeadingBismillah = surahHasStandaloneBismillahAyah(surah);
+  const visibleAyahs = omitLeadingBismillah ? surah.ayahs.slice(1) : surah.ayahs;
   const isListening = audio.playState === 'playing' || audio.playState === 'loading';
 
   return (
@@ -330,38 +402,6 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
             onTogglePlayAll={audio.togglePlayAll}
           />
 
-          {hasBismillahHeading && (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '18px 16px',
-                marginBottom: 12,
-                fontSize: 'clamp(1.2rem, 2.5vw, 1.7rem)',
-                color: 'var(--gold)',
-                fontFamily: 'var(--font-crimson), serif',
-                direction: 'rtl',
-                lineHeight: 1.9,
-                textShadow: '0 0 20px rgba(201,168,76,0.22)',
-                background: 'linear-gradient(135deg, rgba(201,168,76,0.06), transparent)',
-                border: '1px solid var(--border)',
-                borderRadius: 14,
-                position: 'relative',
-                overflow: 'hidden',
-              }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 1,
-                  background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent)',
-                }}
-              />
-              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-            </div>
-          )}
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {visibleAyahs.map((ayah) => (
               <AyahRow
@@ -371,6 +411,13 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
                 text={ayah.text}
                 isActive={audio.activeAyah === ayah.numberInSurah}
                 playState={audio.activeAyah === ayah.numberInSurah ? audio.playState : 'idle'}
+                karaoke={
+                  audio.activeAyah === ayah.numberInSurah &&
+                  audio.playbackProgress &&
+                  audio.playbackProgress.duration > 0
+                    ? audio.playbackProgress
+                    : null
+                }
                 onPlayToggle={() => audio.toggleAyah(ayah.numberInSurah)}
               />
             ))}
@@ -645,12 +692,22 @@ const AyahRow = forwardRef<
     text: string;
     isActive: boolean;
     playState: PlayState;
+    karaoke: PlaybackProgress | null;
     onPlayToggle: () => void;
   }
->(({ number, text, isActive, playState, onPlayToggle }, ref) => {
+>(({ number, text, isActive, playState, karaoke, onPlayToggle }, ref) => {
   const [hov, setHov] = useState(false);
   const isPlaying = isActive && playState === 'playing';
   const isLoading = isActive && playState === 'loading';
+
+  const words = useMemo(() => splitAyahWords(text), [text]);
+  const karaokeIdx =
+    karaoke && karaoke.duration > 0 && words.length > 0
+      ? getKaraokeWordIndex(karaoke.currentTime, karaoke.duration, words)
+      : -1;
+  const showKaraoke = karaoke !== null && karaoke.duration > 0 && words.length > 0;
+  const isPaused = isActive && playState === 'paused';
+  const karaokeSpotlight = isActive && (isPlaying || isPaused);
 
   return (
     <div
@@ -750,15 +807,55 @@ const AyahRow = forwardRef<
           margin: 0,
           fontSize: 'clamp(1.15rem, 2.3vw, 1.5rem)',
           lineHeight: 2.2,
-          color: isActive ? 'var(--gold3)' : 'var(--text)',
+          color: isActive && !showKaraoke ? 'var(--gold3)' : 'var(--text)',
           textAlign: 'right',
           direction: 'rtl',
           fontFamily: 'var(--font-crimson), serif',
           fontFeatureSettings: '"liga" 1, "kern" 1',
-          textShadow: isActive ? '0 0 18px rgba(201,168,76,0.22)' : 'none',
+          textShadow: isActive && !showKaraoke ? '0 0 18px rgba(201,168,76,0.22)' : 'none',
           transition: 'color 0.22s, text-shadow 0.22s',
         }}>
-        {text}
+        {showKaraoke
+          ? words.map((word, i) => (
+              <Fragment key={i}>
+                {i > 0 ? ' ' : null}
+                <span
+                  style={{
+                    display: 'inline',
+                    padding: '0.06em 0.1em',
+                    margin: '0 0.02em',
+                    borderRadius: 5,
+                    transition:
+                      'color 0.1s ease, background-color 0.12s ease, text-shadow 0.12s ease, font-weight 0.12s ease',
+                    color:
+                      i < karaokeIdx
+                        ? 'rgba(201,168,76,0.55)'
+                        : i === karaokeIdx
+                          ? 'var(--teal)'
+                          : isActive
+                            ? 'rgba(255,255,255,0.35)'
+                            : 'var(--text)',
+                    background:
+                      i === karaokeIdx && karaokeSpotlight
+                        ? isPlaying
+                          ? 'rgba(45,212,191,0.14)'
+                          : 'rgba(45,212,191,0.08)'
+                        : 'transparent',
+                    textShadow:
+                      i === karaokeIdx && karaokeSpotlight
+                        ? isPlaying
+                          ? '0 0 22px rgba(45,212,191,0.45)'
+                          : '0 0 14px rgba(45,212,191,0.25)'
+                        : 'none',
+                    fontWeight: i === karaokeIdx ? 700 : 400,
+                    boxDecorationBreak: 'clone',
+                    WebkitBoxDecorationBreak: 'clone',
+                  }}>
+                  {word}
+                </span>
+              </Fragment>
+            ))
+          : text}
         <span
           style={{
             display: 'inline-flex',
