@@ -1,4 +1,10 @@
-const QURAN_UTHMANI_URL = 'https://api.alquran.cloud/v1/quran/quran-uthmani';
+const QURAN_UPSTREAM = 'https://api.alquran.cloud/v1/quran/quran-uthmani';
+
+/** Browser uses same-origin API route (reliable on Vercel); server falls back to upstream. */
+function quranFetchUrl(): string {
+  if (typeof window !== 'undefined') return '/api/quran/full';
+  return QURAN_UPSTREAM;
+}
 
 export type QuranAyah = {
   number: number;
@@ -38,7 +44,7 @@ export async function fetchFullQuranUthmani(signal?: AbortSignal): Promise<Quran
   if (fullQuranInflight) return fullQuranInflight;
 
   fullQuranInflight = (async () => {
-    const res = await fetch(QURAN_UTHMANI_URL, { signal });
+    const res = await fetch(quranFetchUrl(), { signal });
     if (!res.ok) throw new Error(`Quran API: ${res.status}`);
     const json: QuranApiResponse = await res.json();
     if (json.code !== 200 || !json.data?.surahs?.length) {
