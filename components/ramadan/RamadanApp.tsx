@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useIbadahTracker } from '@/hooks/useIbadahTracker';
 import { useJuzRead } from '@/hooks/useJuzRead';
 import { usePrayerSchedule } from '@/hooks/usePrayerSchedule';
 import { useRamadanClock } from '@/hooks/useRamadanClock';
 import { useStars } from '@/hooks/useStars';
+import { fetchFullQuranUthmani } from '@/lib/quran-api';
 import type { TabId } from '@/lib/types';
 import { AppFooter } from './layout/AppFooter';
 import { AppHeader } from './layout/AppHeader';
@@ -25,6 +26,10 @@ export function RamadanApp() {
   const { trackerDone, toggleItem, reset } = useIbadahTracker(nowTick);
   const { juzRead, toggleJuz } = useJuzRead();
   const [tab, setTab] = useState<TabId>('home');
+
+  useEffect(() => {
+    void fetchFullQuranUthmani();
+  }, []);
 
   return (
     <>
