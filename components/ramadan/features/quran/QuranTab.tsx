@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { BookMarked, Quote, RefreshCw } from 'lucide-react';
+import { BookMarked } from 'lucide-react';
 import { QuranFullSurahs } from './QuranFullSurahs';
 import { SurahOverlay } from './SurahOverlay';
 import type { QuranSurah } from '@/lib/quran-api';
-import { verses } from '@/lib/constants';
-
 type Props = {
   active: boolean;
   juzRead: number[];
@@ -14,7 +12,6 @@ type Props = {
 };
 
 export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
-  const [verseIdx, setVerseIdx] = useState(0);
   const [selectedSurah, setSelectedSurah] = useState<QuranSurah | null>(null);
 
   /*
@@ -24,8 +21,6 @@ export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
    * them up the first time they arrive via onSurahsLoaded.
    */
   const [allSurahs, setAllSurahs] = useState<QuranSurah[]>([]);
-
-  const v = verses[verseIdx];
 
   return (
     <div
@@ -49,29 +44,6 @@ export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
           onSurahsLoaded={(surahs) => setAllSurahs(surahs)}
         />
       )}
-
-      {/* ── Verse of the Day ── */}
-      <div className="section-title">
-        <Quote size={16} /> Verse of the Day
-      </div>
-      <div className="card">
-        <div className="quran-arabic" id="verseArabic">
-          {v.arabic}
-        </div>
-        <div className="quran-translation" id="verseTranslation">
-          {v.translation}
-        </div>
-        <div className="quran-ref" id="verseRef">
-          {v.ref}
-        </div>
-        <button
-          type="button"
-          className="refresh-btn"
-          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          onClick={() => setVerseIdx((i) => (i + 1) % verses.length)}>
-          <RefreshCw size={14} /> Next Verse
-        </button>
-      </div>
 
       {/* ── 30-Day Reading Plan ── */}
       <div style={{ marginTop: 24 }} className="section-title">

@@ -4,3 +4,4 @@ out
 *.log
 .env*.local
 vercel.json
+config.bat

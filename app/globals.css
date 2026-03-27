@@ -783,6 +783,34 @@ header h1 {
   display: block;
 }
 
+/* Home tab: equal vertical rhythm between sections (must beat .tab-section.active { display: block }) */
+.tab-section.home-tab.active {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.home-tab .countdown-card {
+  margin-bottom: 0;
+}
+
+.home-tab .home-section .section-title {
+  margin-bottom: 0;
+}
+
+.home-tab .prayer-grid {
+  margin-bottom: 0;
+}
+
+.home-tab .home-section .card {
+  margin-bottom: 0;
+}
+
+.home-section .section-title + .prayer-grid,
+.home-section .section-title + .card {
+  margin-top: 14px;
+}
+
 .cal-strip {
   display: flex;
   gap: 8px;

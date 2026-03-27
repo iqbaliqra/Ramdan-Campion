@@ -3,7 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { PRAYER_KEYS, PRAYER_NAMES } from '@/lib/constants';
 import type { PrayerTimings } from '@/lib/types';
-import { fetchPrayerTimes, timeToMins } from '@/lib/utils';
+import { fetchPrayerTimes, timeToMins, timeToSecsFromMidnight } from '@/lib/utils';
+
+const NEXT_EVENT_LABEL: Record<(typeof PRAYER_KEYS)[number], string> = {
+  Fajr: 'Suhoor Ends (Fajr)',
+  Sunrise: 'Sunrise',
+  Dhuhr: 'Dhuhr',
+  Asr: 'Asr',
+  Maghrib: 'Iftar (Maghrib)',
+  Isha: 'Isha Prayer',
+};
 
 export function usePrayerSchedule() {
   const [userCity, setUserCity] = useState('Lahore');
@@ -70,26 +79,31 @@ export function usePrayerSchedule() {
       const pd = prayerData;
       if (!pd) return;
       const now = new Date();
+      const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
       const nowMins = now.getHours() * 60 + now.getMinutes();
-      const events = [
-        { name: 'Suhoor Ends (Fajr)', key: 'Fajr' as const },
-        { name: 'Iftar (Maghrib)', key: 'Maghrib' as const },
-        { name: 'Isha Prayer', key: 'Isha' as const },
-      ];
-      let next: { name: string; key: string; mins: number } | null = null;
-      for (const ev of events) {
-        const mins = timeToMins(pd[ev.key]);
-        if (mins > nowMins) {
-          next = { ...ev, mins };
+
+      let nextSecsFromMidnight: number | null = null;
+      let nextName = 'Fajr (Tomorrow)';
+      for (const key of PRAYER_KEYS) {
+        const raw = pd[key];
+        if (!raw) continue;
+        const evSecs = timeToSecsFromMidnight(raw);
+        if (evSecs > nowSecs) {
+          nextSecsFromMidnight = evSecs;
+          nextName = NEXT_EVENT_LABEL[key];
           break;
         }
       }
-      if (!next) next = { name: 'Fajr (Tomorrow)', key: 'Fajr', mins: timeToMins(pd['Fajr']) + 1440 };
-      const diffSecs = (next.mins - nowMins) * 60 - now.getSeconds();
+      if (nextSecsFromMidnight === null) {
+        nextSecsFromMidnight = timeToSecsFromMidnight(pd['Fajr']) + 86400;
+        nextName = 'Fajr (Tomorrow)';
+      }
+
+      const diffSecs = Math.max(0, nextSecsFromMidnight - nowSecs);
       const h = Math.floor(diffSecs / 3600);
       const m = Math.floor((diffSecs % 3600) / 60);
-      const s = diffSecs % 60;
-      setNextEvent(next.name);
+      const s = Math.floor(diffSecs % 60);
+      setNextEvent(nextName);
       setCountH(String(h).padStart(2, '0'));
       setCountM(String(m).padStart(2, '0'));
       setCountS(String(s).padStart(2, '0'));

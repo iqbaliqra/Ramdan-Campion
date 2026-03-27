@@ -1,16 +1,34 @@
 import { ibadahItems } from './constants';
 import type { PrayerTimings } from './types';
 
+/** Strip optional timezone suffix from Aladhan-style strings, e.g. "18:05 (PKT)". */
+export function normalizeTimeString(t: string | undefined) {
+  if (!t) return '';
+  return t.trim().split(/\s+/)[0] ?? '';
+}
+
 export function formatTime(t: string | undefined) {
   if (!t) return '—';
-  const [h, m] = t.split(':').map(Number);
+  const n = normalizeTimeString(t);
+  const [h, m] = n.split(':').map(Number);
   const ampm = h >= 12 ? 'PM' : 'AM';
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
 export function timeToMins(t: string) {
-  const [h, m] = t.split(':').map(Number);
+  const n = normalizeTimeString(t);
+  const [h, m] = n.split(':').map(Number);
   return h * 60 + m;
+}
+
+/** Seconds since local midnight from API time string (HH:MM or HH:MM:SS). */
+export function timeToSecsFromMidnight(t: string) {
+  const n = normalizeTimeString(t);
+  const parts = n.split(':').map(Number);
+  const h = parts[0];
+  const m = parts[1] ?? 0;
+  const sec = parts[2] ?? 0;
+  return h * 3600 + m * 60 + sec;
 }
 
 export function trackerKey() {
