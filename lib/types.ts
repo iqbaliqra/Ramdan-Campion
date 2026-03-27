@@ -15,3 +15,5 @@ export type Verse = { arabic: string; translation: string; ref: string };
 export type IbadahItem = { id: string; label: string; icon: string };
 
 export type EssentialDua = { ar: string; tr: string; me: string; oc: string };
+
+export type TabItem = { id: TabId; label: string; icon: string };

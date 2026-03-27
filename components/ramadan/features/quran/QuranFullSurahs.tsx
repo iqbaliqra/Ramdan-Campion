@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, BookOpen, Building2, ChevronRight, RefreshCw, Search } from 'lucide-react';
 import {
   fetchFullQuranUthmani,
   type QuranSurah,
-} from '@/lib/ramadan/quran-api';
+} from '@/lib/quran-api';
 
 /* ── All 114 surah meaning translations ── */
 const TRANSLATIONS: Record<number, string> = {
@@ -126,10 +127,6 @@ const TRANSLATIONS: Record<number, string> = {
 
 type FilterType = 'all' | 'meccan' | 'medinan';
 
-/* ════════════════════════════════════════════
-   Props — onSurahSelect is optional for now;
-   Step 2 will pass it in from QuranTab
-════════════════════════════════════════════ */
 type Props = {
   onSurahSelect?: (surah: QuranSurah) => void;
   onSurahsLoaded?: (surahs: QuranSurah[]) => void;
@@ -141,7 +138,7 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
-  const [ready, setReady] = useState(false); // triggers card animations
+  const [ready, setReady] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -150,7 +147,6 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
       const data = await fetchFullQuranUthmani();
       setSurahs(data);
       onSurahsLoaded?.(data);
-      // Small delay so first paint is done before animating in
       setTimeout(() => setReady(true), 60);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load Quran');
@@ -163,7 +159,6 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
     void load();
   }, [load]);
 
-  /* ── Filter + search ── */
   const filtered = useMemo(() => {
     if (!surahs) return [];
     const q = search.trim().toLowerCase();
@@ -193,7 +188,7 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
     <div className="quran-full" style={{ marginBottom: 36 }}>
       {/* ── Section heading ── */}
       <div className="section-title" style={{ marginBottom: 18 }}>
-        📖 Al-Quran Al-Kareem
+        <BookOpen size={16} /> Al-Quran Al-Kareem
       </div>
 
       {/* ── Bismillah banner ── */}
@@ -209,7 +204,6 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
           position: 'relative',
           overflow: 'hidden',
         }}>
-        {/* top shimmer */}
         <div
           style={{
             position: 'absolute',
@@ -222,7 +216,6 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
             opacity: 0.55,
           }}
         />
-        {/* radial glow */}
         <div
           style={{
             position: 'absolute',
@@ -260,18 +253,18 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
 
       {/* ── Search input ── */}
       <div style={{ position: 'relative', marginBottom: 12 }}>
-        <span
+        <Search
+          size={15}
           style={{
             position: 'absolute',
             left: 14,
             top: '50%',
             transform: 'translateY(-50%)',
-            fontSize: '0.9rem',
             pointerEvents: 'none',
             opacity: 0.45,
-          }}>
-          🔍
-        </span>
+            color: 'var(--muted)',
+          }}
+        />
         <input
           type="search"
           className="quran-full__search"
@@ -293,18 +286,10 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
             flexWrap: 'wrap',
           }}>
           {[
-            { id: 'all' as FilterType, label: 'All', count: surahs.length },
-            {
-              id: 'meccan' as FilterType,
-              label: '🕋 Makkah',
-              count: meccanCount,
-            },
-            {
-              id: 'medinan' as FilterType,
-              label: '🕌 Madinah',
-              count: medinanCount,
-            },
-          ].map(({ id, label, count }) => {
+            { id: 'all' as FilterType, label: 'All', count: surahs.length, icon: null },
+            { id: 'meccan' as FilterType, label: 'Makkah', count: meccanCount, icon: 'meccan' },
+            { id: 'medinan' as FilterType, label: 'Madinah', count: medinanCount, icon: 'medinan' },
+          ].map(({ id, label, count, icon }) => {
             const active = filter === id;
             return (
               <button
@@ -326,6 +311,7 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
                   cursor: 'pointer',
                   transition: 'all .16s ease',
                 }}>
+                {icon && <Building2 size={11} />}
                 {label}
                 <span
                   style={{
@@ -367,7 +353,6 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
             <span className="loading" aria-hidden />
             Loading Al-Quran Al-Kareem…
           </div>
-          {/* Skeleton cards */}
           <div
             style={{
               display: 'grid',
@@ -395,12 +380,15 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
       {/* ── Error ── */}
       {error && (
         <div className="quran-full__error" role="alert">
-          <span>⚠️ {error}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <AlertTriangle size={16} /> {error}
+          </span>
           <button
             type="button"
             className="refresh-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
             onClick={() => void load()}>
-            ↺ Try again
+            <RefreshCw size={14} /> Try again
           </button>
         </div>
       )}
@@ -432,8 +420,8 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
                 fontSize: '1rem',
               }}>
               <div
-                style={{ fontSize: '1.8rem', marginBottom: 10, opacity: 0.35 }}>
-                🔍
+                style={{ display: 'flex', justifyContent: 'center', marginBottom: 10, opacity: 0.35 }}>
+                <Search size={32} />
               </div>
               No surahs match &ldquo;{search}&rdquo;
             </div>
@@ -479,7 +467,6 @@ function SurahCard({
   const isMeccan = surah.revelationType === 'Meccan';
   const translation =
     TRANSLATIONS[surah.number] ?? surah.englishNameTranslation;
-  /* Cap stagger at 30 cards so late items don't have a 3-second delay */
   const delay = Math.min(index, 30) * 25;
 
   return (
@@ -489,7 +476,6 @@ function SurahCard({
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        /* Layout */
         display: 'grid',
         gridTemplateColumns: '48px 1fr auto',
         alignItems: 'center',
@@ -498,7 +484,6 @@ function SurahCard({
         width: '100%',
         textAlign: 'left',
         cursor: 'pointer',
-        /* Visuals */
         background: hov
           ? 'linear-gradient(135deg, rgba(201,168,76,.08), rgba(17,21,40,.98))'
           : 'var(--bg2)',
@@ -508,7 +493,6 @@ function SurahCard({
           'border-color .18s, background .18s, transform .18s, box-shadow .18s',
         transform: hov ? 'translateY(-2px)' : 'translateY(0)',
         boxShadow: hov ? '0 8px 28px rgba(201,168,76,.1)' : 'none',
-        /* ✅ FIX: all animation properties longhand — no shorthand mixing */
         opacity: ready ? 1 : 0,
         animationName: ready ? 'surahCardIn' : 'none',
         animationDuration: '0.38s',
@@ -518,7 +502,6 @@ function SurahCard({
         position: 'relative',
         overflow: 'hidden',
       }}>
-      {/* Hover top-edge shimmer */}
       {hov && (
         <div
           style={{
@@ -534,12 +517,9 @@ function SurahCard({
         />
       )}
 
-      {/* ── Col 1: number badge ── */}
       <NumberBadge number={surah.number} hov={hov} />
 
-      {/* ── Col 2: names + meta ── */}
       <div style={{ minWidth: 0 }}>
-        {/* English name */}
         <div
           style={{
             fontFamily: 'var(--font-cinzel), serif',
@@ -554,7 +534,6 @@ function SurahCard({
           }}>
           {surah.englishName}
         </div>
-        {/* Meaning */}
         <div
           style={{
             fontSize: '0.73rem',
@@ -568,10 +547,12 @@ function SurahCard({
           }}>
           {translation}
         </div>
-        {/* Badges */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <span
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
               fontSize: '0.59rem',
               letterSpacing: '0.07em',
               textTransform: 'uppercase',
@@ -581,7 +562,8 @@ function SurahCard({
               borderRadius: 100,
               padding: '2px 7px',
             }}>
-            {isMeccan ? '🕋 Makkah' : '🕌 Madinah'}
+            <Building2 size={10} />
+            {isMeccan ? 'Makkah' : 'Madinah'}
           </span>
           <span
             style={{
@@ -594,7 +576,6 @@ function SurahCard({
         </div>
       </div>
 
-      {/* ── Col 3: Arabic name + chevron ── */}
       <div
         style={{
           display: 'flex',
@@ -615,18 +596,15 @@ function SurahCard({
           }}>
           {surah.name}
         </div>
-        {/* Chevron */}
-        <span
+        <ChevronRight
+          size={16}
           style={{
-            fontSize: '1rem',
             color: hov ? 'var(--gold2)' : 'var(--muted)',
             opacity: hov ? 1 : 0.35,
             transform: hov ? 'translateX(2px)' : 'none',
             transition: 'all .18s',
-            lineHeight: 1,
-          }}>
-          ›
-        </span>
+          }}
+        />
       </div>
     </button>
   );
@@ -652,7 +630,6 @@ function NumberBadge({ number, hov }: { number: number; hov: boolean }) {
         height="44"
         viewBox="0 0 44 44"
         style={{ position: 'absolute' }}>
-        {/* Outer 8-point star polygon */}
         <polygon
           points="22,2 26.5,8 34,8 34,15.5 40,22 34,28.5 34,36 26.5,36 22,42 17.5,36 10,36 10,28.5 4,22 10,15.5 10,8 17.5,8"
           fill={hov ? 'rgba(201,168,76,.12)' : 'rgba(201,168,76,.05)'}
@@ -660,7 +637,6 @@ function NumberBadge({ number, hov }: { number: number; hov: boolean }) {
           strokeWidth="1"
           style={{ transition: 'all .18s' }}
         />
-        {/* Inner circle */}
         <circle
           cx="22"
           cy="22"

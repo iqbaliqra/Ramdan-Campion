@@ -1,7 +1,8 @@
 'use client';
 
-import { TAB_ITEMS } from '@/lib/ramadan/constants';
-import type { TabId } from '@/lib/ramadan/types';
+import { TAB_ITEMS } from '@/lib/constants';
+import type { TabId } from '@/lib/types';
+import { Icon } from '@/components/ui/Icon';
 
 type Props = {
   tab: TabId;
@@ -11,7 +12,7 @@ type Props = {
 export function TabBar({ tab, onTabChange }: Props) {
   return (
     <div className="tabs" role="tablist">
-      {TAB_ITEMS.map(({ id, label }) => (
+      {TAB_ITEMS.map(({ id, label, icon }) => (
         <button
           key={id}
           type="button"
@@ -20,7 +21,8 @@ export function TabBar({ tab, onTabChange }: Props) {
           className={'tab-btn' + (tab === id ? ' active' : '')}
           onClick={() => onTabChange(id)}
         >
-          {label}
+          <Icon name={icon} size={18} />
+          <span>{label}</span>
         </button>
       ))}
     </div>

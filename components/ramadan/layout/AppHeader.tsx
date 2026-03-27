@@ -1,5 +1,7 @@
 'use client';
 
+import { CalendarDays, Clock, Moon } from 'lucide-react';
+
 type Props = {
   gregDate: string;
   hijriDate: string;
@@ -9,18 +11,18 @@ type Props = {
 export function AppHeader({ gregDate, hijriDate, currentTime }: Props) {
   return (
     <header>
-      <span className="crescent-moon">☪</span>
+      <Moon className="crescent-moon" size={48} />
       <h1>Ramadan Companion</h1>
       <p className="arabic-title">رمضان المبارك</p>
       <div className="date-bar">
         <div>
-          📅 Gregorian: <span>{gregDate}</span>
+          <CalendarDays size={14} /> Gregorian: <span>{gregDate}</span>
         </div>
         <div>
-          🌙 Hijri: <span>{hijriDate}</span>
+          <Moon size={14} /> Hijri: <span>{hijriDate}</span>
         </div>
         <div>
-          🕐 <span>{currentTime}</span>
+          <Clock size={14} /> <span>{currentTime}</span>
         </div>
       </div>
     </header>

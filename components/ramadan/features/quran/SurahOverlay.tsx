@@ -2,7 +2,8 @@
 
 import { forwardRef } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { QuranSurah } from '@/lib/ramadan/quran-api';
+import { ArrowLeft, Building2, ChevronLeft, ChevronRight, Headphones, Square, X } from 'lucide-react';
+import type { QuranSurah } from '@/lib/quran-api';
 
 /* ─────────────────────────────────────────────────────────────────
    SurahOverlay — Audio Player + Ayah Highlighting
@@ -16,132 +17,43 @@ function ayahAudioUrl(surahNum: number, ayahNum: number): string {
   return `https://everyayah.com/data/Abdul_Basit_Murattal_192kbps/${s}${a}.mp3`;
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   Helper — does ayah 1 of this surah contain the Bismillah?
-   (API prepends it for every surah except 1 and 9)
-───────────────────────────────────────────────────────────────── */
 function ayah1IsBismillah(surah: QuranSurah): boolean {
   if (surah.number === 1 || surah.number === 9) return false;
   const text = surah.ayahs[0]?.text ?? '';
   return text.includes('ٱلرَّحِيمِ') || text.includes('الرَّحِيمِ');
 }
 
-/* ── Translations ── */
 const TRANSLATIONS: Record<number, string> = {
-  1: 'The Opening',
-  2: 'The Cow',
-  3: 'Family of Imran',
-  4: 'The Women',
-  5: 'The Table Spread',
-  6: 'The Cattle',
-  7: 'The Heights',
-  8: 'The Spoils of War',
-  9: 'The Repentance',
-  10: 'Jonah',
-  11: 'Hud',
-  12: 'Joseph',
-  13: 'The Thunder',
-  14: 'Abraham',
-  15: 'The Rocky Tract',
-  16: 'The Bee',
-  17: 'The Night Journey',
-  18: 'The Cave',
-  19: 'Mary',
-  20: 'Ta-Ha',
-  21: 'The Prophets',
-  22: 'The Pilgrimage',
-  23: 'The Believers',
-  24: 'The Light',
-  25: 'The Criterion',
-  26: 'The Poets',
-  27: 'The Ant',
-  28: 'The Stories',
-  29: 'The Spider',
-  30: 'The Romans',
-  31: 'Luqman',
-  32: 'The Prostration',
-  33: 'The Combined Forces',
-  34: 'Sheba',
-  35: 'Originator',
-  36: 'Ya Sin',
-  37: 'Those Ranged in Ranks',
-  38: 'Sad',
-  39: 'The Troops',
-  40: 'The Forgiver',
-  41: 'Explained in Detail',
-  42: 'The Consultation',
-  43: 'The Gold Adornments',
-  44: 'The Smoke',
-  45: 'The Crouching',
-  46: 'Wind-Curved Sandhills',
-  47: 'Muhammad',
-  48: 'The Victory',
-  49: 'The Rooms',
-  50: 'The Letter Qaf',
-  51: 'The Winnowing Winds',
-  52: 'The Mount',
-  53: 'The Star',
-  54: 'The Moon',
-  55: 'The Beneficent',
-  56: 'The Inevitable',
-  57: 'The Iron',
-  58: 'The Pleading Woman',
-  59: 'The Exile',
-  60: 'She to be Examined',
-  61: 'The Ranks',
-  62: 'Friday',
-  63: 'The Hypocrites',
-  64: 'The Mutual Disillusion',
-  65: 'The Divorce',
-  66: 'The Prohibition',
-  67: 'The Sovereignty',
-  68: 'The Pen',
-  69: 'The Reality',
-  70: 'The Ascending Stairways',
-  71: 'Noah',
-  72: 'The Jinn',
-  73: 'The Enshrouded One',
-  74: 'The Cloaked One',
-  75: 'The Resurrection',
-  76: 'The Man',
-  77: 'The Emissaries',
-  78: 'The Tidings',
-  79: 'Those Who Drag Forth',
-  80: 'He Frowned',
-  81: 'The Overthrowing',
-  82: 'The Cleaving',
-  83: 'The Defrauding',
-  84: 'The Splitting Open',
-  85: 'Mansions of the Stars',
-  86: 'The Morning Star',
-  87: 'The Most High',
-  88: 'The Overwhelming',
-  89: 'The Dawn',
-  90: 'The City',
-  91: 'The Sun',
-  92: 'The Night',
-  93: 'The Morning Hours',
-  94: 'The Relief',
-  95: 'The Fig',
-  96: 'The Clot',
-  97: 'The Power',
-  98: 'The Clear Proof',
-  99: 'The Earthquake',
-  100: 'The Courser',
-  101: 'The Calamity',
-  102: 'The Rivalry',
-  103: 'The Declining Day',
-  104: 'The Traducer',
-  105: 'The Elephant',
-  106: 'Quraysh',
-  107: 'The Small Kindnesses',
-  108: 'The Abundance',
-  109: 'The Disbelievers',
-  110: 'The Divine Support',
-  111: 'The Palm Fiber',
-  112: 'The Sincerity',
-  113: 'The Daybreak',
-  114: 'The Mankind',
+  1: 'The Opening', 2: 'The Cow', 3: 'Family of Imran', 4: 'The Women',
+  5: 'The Table Spread', 6: 'The Cattle', 7: 'The Heights', 8: 'The Spoils of War',
+  9: 'The Repentance', 10: 'Jonah', 11: 'Hud', 12: 'Joseph', 13: 'The Thunder',
+  14: 'Abraham', 15: 'The Rocky Tract', 16: 'The Bee', 17: 'The Night Journey',
+  18: 'The Cave', 19: 'Mary', 20: 'Ta-Ha', 21: 'The Prophets', 22: 'The Pilgrimage',
+  23: 'The Believers', 24: 'The Light', 25: 'The Criterion', 26: 'The Poets',
+  27: 'The Ant', 28: 'The Stories', 29: 'The Spider', 30: 'The Romans',
+  31: 'Luqman', 32: 'The Prostration', 33: 'The Combined Forces', 34: 'Sheba',
+  35: 'Originator', 36: 'Ya Sin', 37: 'Those Ranged in Ranks', 38: 'Sad',
+  39: 'The Troops', 40: 'The Forgiver', 41: 'Explained in Detail', 42: 'The Consultation',
+  43: 'The Gold Adornments', 44: 'The Smoke', 45: 'The Crouching',
+  46: 'Wind-Curved Sandhills', 47: 'Muhammad', 48: 'The Victory', 49: 'The Rooms',
+  50: 'The Letter Qaf', 51: 'The Winnowing Winds', 52: 'The Mount', 53: 'The Star',
+  54: 'The Moon', 55: 'The Beneficent', 56: 'The Inevitable', 57: 'The Iron',
+  58: 'The Pleading Woman', 59: 'The Exile', 60: 'She to be Examined', 61: 'The Ranks',
+  62: 'Friday', 63: 'The Hypocrites', 64: 'The Mutual Disillusion', 65: 'The Divorce',
+  66: 'The Prohibition', 67: 'The Sovereignty', 68: 'The Pen', 69: 'The Reality',
+  70: 'The Ascending Stairways', 71: 'Noah', 72: 'The Jinn', 73: 'The Enshrouded One',
+  74: 'The Cloaked One', 75: 'The Resurrection', 76: 'The Man', 77: 'The Emissaries',
+  78: 'The Tidings', 79: 'Those Who Drag Forth', 80: 'He Frowned',
+  81: 'The Overthrowing', 82: 'The Cleaving', 83: 'The Defrauding',
+  84: 'The Splitting Open', 85: 'Mansions of the Stars', 86: 'The Morning Star',
+  87: 'The Most High', 88: 'The Overwhelming', 89: 'The Dawn', 90: 'The City',
+  91: 'The Sun', 92: 'The Night', 93: 'The Morning Hours', 94: 'The Relief',
+  95: 'The Fig', 96: 'The Clot', 97: 'The Power', 98: 'The Clear Proof',
+  99: 'The Earthquake', 100: 'The Courser', 101: 'The Calamity', 102: 'The Rivalry',
+  103: 'The Declining Day', 104: 'The Traducer', 105: 'The Elephant', 106: 'Quraysh',
+  107: 'The Small Kindnesses', 108: 'The Abundance', 109: 'The Disbelievers',
+  110: 'The Divine Support', 111: 'The Palm Fiber', 112: 'The Sincerity',
+  113: 'The Daybreak', 114: 'The Mankind',
 };
 
 type PlayState = 'idle' | 'loading' | 'playing' | 'paused';
@@ -165,12 +77,8 @@ function useAudioPlayer(surah: QuranSurah) {
   const isPlayAllRef = useRef(false);
   const surahRef = useRef(surah);
 
-  useEffect(() => {
-    surahRef.current = surah;
-  }, [surah]);
-  useEffect(() => {
-    isPlayAllRef.current = isPlayAll;
-  }, [isPlayAll]);
+  useEffect(() => { surahRef.current = surah; }, [surah]);
+  useEffect(() => { isPlayAllRef.current = isPlayAll; }, [isPlayAll]);
 
   const stop = useCallback(() => {
     if (audioRef.current) {
@@ -187,9 +95,7 @@ function useAudioPlayer(surah: QuranSurah) {
     isPlayAllRef.current = false;
   }, []);
 
-  useEffect(() => {
-    stop();
-  }, [surah.number, stop]);
+  useEffect(() => { stop(); }, [surah.number, stop]);
   useEffect(() => () => stop(), [stop]);
 
   const playAyah = useCallback((ayahNum: number) => {
@@ -227,9 +133,7 @@ function useAudioPlayer(surah: QuranSurah) {
         return;
       }
       const nextNum = ayahNum + 1;
-      const exists = surahRef.current.ayahs.some(
-        (a) => a.numberInSurah === nextNum,
-      );
+      const exists = surahRef.current.ayahs.some((a) => a.numberInSurah === nextNum);
       if (exists) {
         playAyah(nextNum);
       } else {
@@ -249,7 +153,6 @@ function useAudioPlayer(surah: QuranSurah) {
       stop();
       return;
     }
-    /* Skip bismillah ayah (ayah 1) for all surahs except 1 and 9 */
     const hasBismillah = ayah1IsBismillah(surahRef.current);
     const startAyah = hasBismillah ? 2 : 1;
     isPlayAllRef.current = true;
@@ -311,9 +214,7 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
   useEffect(() => {
@@ -338,24 +239,11 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
   const prevSurah = surah.number > 1 ? allSurahs[surah.number - 2] : null;
   const nextSurah = surah.number < 114 ? allSurahs[surah.number] : null;
   const isMeccan = surah.revelationType === 'Meccan';
-  const translation =
-    TRANSLATIONS[surah.number] ?? surah.englishNameTranslation;
+  const translation = TRANSLATIONS[surah.number] ?? surah.englishNameTranslation;
 
-  /* ─────────────────────────────────────────────────────────
-     Bismillah handling:
-     - If ayah 1 contains Bismillah → show it as a decorative
-       heading, skip it from the ayah list entirely.
-     - Ayah numbers stay correct (2, 3, 4… not 1, 2, 3…)
-     - Surah 1 (Al-Fatiha): Bismillah IS the real ayah 1 → keep
-     - Surah 9 (At-Tawbah): no Bismillah → keep all ayahs
-  ───────────────────────────────────────────────────────── */
   const hasBismillahHeading = ayah1IsBismillah(surah);
-
-  /* Skip ayah 1 from the list when it's just the bismillah */
   const visibleAyahs = hasBismillahHeading ? surah.ayahs.slice(1) : surah.ayahs;
-
-  const isListening =
-    audio.playState === 'playing' || audio.playState === 'loading';
+  const isListening = audio.playState === 'playing' || audio.playState === 'loading';
 
   return (
     <div
@@ -382,8 +270,7 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
           height: 260,
           pointerEvents: 'none',
           zIndex: 0,
-          background:
-            'radial-gradient(ellipse at 50% -10%, rgba(201,168,76,0.13) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at 50% -10%, rgba(201,168,76,0.13) 0%, transparent 70%)',
         }}
       />
 
@@ -406,38 +293,18 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
         <BackButton onClick={handleClose} />
 
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-          <span
-            style={{
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: '0.7rem',
-              color: 'var(--muted)',
-              letterSpacing: '0.04em',
-            }}>
+          <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: '0.04em' }}>
             Al-Quran
           </span>
           <span style={{ color: 'var(--border)', margin: '0 7px' }}>/</span>
-          <span
-            style={{
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: '0.7rem',
-              color: 'var(--gold2)',
-              letterSpacing: '0.04em',
-            }}>
+          <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: '0.7rem', color: 'var(--gold2)', letterSpacing: '0.04em' }}>
             {surah.number}. {surah.englishName}
           </span>
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          <NavArrow
-            direction="prev"
-            surah={prevSurah}
-            onClick={() => prevSurah && handleNavigate(prevSurah)}
-          />
-          <NavArrow
-            direction="next"
-            surah={nextSurah}
-            onClick={() => nextSurah && handleNavigate(nextSurah)}
-          />
+          <NavArrow direction="prev" surah={prevSurah} onClick={() => prevSurah && handleNavigate(prevSurah)} />
+          <NavArrow direction="next" surah={nextSurah} onClick={() => nextSurah && handleNavigate(nextSurah)} />
         </div>
       </div>
 
@@ -452,20 +319,9 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
           scrollbarWidth: 'thin',
           scrollbarColor: 'var(--border) transparent',
         }}>
-        <div
-          style={{
-            maxWidth: 800,
-            margin: '0 auto',
-            padding: '36px 20px 100px',
-          }}>
-          {/* Surah header */}
-          <SurahHeader
-            surah={surah}
-            translation={translation}
-            isMeccan={isMeccan}
-          />
+        <div style={{ maxWidth: 800, margin: '0 auto', padding: '36px 20px 100px' }}>
+          <SurahHeader surah={surah} translation={translation} isMeccan={isMeccan} />
 
-          {/* Audio player panel */}
           <AudioPanel
             playState={audio.playState}
             activeAyah={audio.activeAyah}
@@ -474,7 +330,6 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
             onTogglePlayAll={audio.togglePlayAll}
           />
 
-          {/* ── Bismillah heading (not an ayah) ── */}
           {hasBismillahHeading && (
             <div
               style={{
@@ -487,14 +342,12 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
                 direction: 'rtl',
                 lineHeight: 1.9,
                 textShadow: '0 0 20px rgba(201,168,76,0.22)',
-                background:
-                  'linear-gradient(135deg, rgba(201,168,76,0.06), transparent)',
+                background: 'linear-gradient(135deg, rgba(201,168,76,0.06), transparent)',
                 border: '1px solid var(--border)',
                 borderRadius: 14,
                 position: 'relative',
                 overflow: 'hidden',
               }}>
-              {/* top shimmer */}
               <div
                 style={{
                   position: 'absolute',
@@ -502,36 +355,27 @@ export function SurahOverlay({ surah, allSurahs, onClose, onNavigate }: Props) {
                   left: 0,
                   right: 0,
                   height: 1,
-                  background:
-                    'linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent)',
+                  background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent)',
                 }}
               />
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </div>
           )}
 
-          {/* ── Ayah list ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {visibleAyahs.map((ayah) => (
               <AyahRow
                 key={ayah.number}
-                ref={(el) => {
-                  ayahRefs.current[ayah.numberInSurah] = el;
-                }}
+                ref={(el) => { ayahRefs.current[ayah.numberInSurah] = el; }}
                 number={ayah.numberInSurah}
                 text={ayah.text}
                 isActive={audio.activeAyah === ayah.numberInSurah}
-                playState={
-                  audio.activeAyah === ayah.numberInSurah
-                    ? audio.playState
-                    : 'idle'
-                }
+                playState={audio.activeAyah === ayah.numberInSurah ? audio.playState : 'idle'}
                 onPlayToggle={() => audio.toggleAyah(ayah.numberInSurah)}
               />
             ))}
           </div>
 
-          {/* Bottom nav */}
           <BottomNav
             prevSurah={prevSurah}
             nextSurah={nextSurah}
@@ -577,9 +421,7 @@ function AudioPanel({
       <div
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
+          top: 0, left: 0, right: 0,
           height: 1,
           background: isListening
             ? 'linear-gradient(90deg, transparent, rgba(45,212,191,0.5), transparent)'
@@ -588,14 +430,7 @@ function AudioPanel({
         }}
       />
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}>
-        {/* Play / Stop button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <button
           type="button"
           onClick={onTogglePlayAll}
@@ -606,9 +441,7 @@ function AudioPanel({
             padding: '11px 24px',
             borderRadius: 50,
             border: `1px solid ${isListening ? 'rgba(45,212,191,0.5)' : 'rgba(201,168,76,0.45)'}`,
-            background: isListening
-              ? 'rgba(45,212,191,0.12)'
-              : 'rgba(201,168,76,0.1)',
+            background: isListening ? 'rgba(45,212,191,0.12)' : 'rgba(201,168,76,0.1)',
             color: isListening ? 'var(--teal)' : 'var(--gold2)',
             fontFamily: 'var(--font-cinzel), serif',
             fontSize: '0.88rem',
@@ -618,31 +451,18 @@ function AudioPanel({
             flexShrink: 0,
           }}>
           {playState === 'loading' && activeAyah === null ? (
-            <>
-              <SpinnerIcon color="var(--gold2)" /> Loading…
-            </>
+            <><SpinnerIcon color="var(--gold2)" /> Loading…</>
           ) : isListening ? (
-            <>
-              <StopIcon /> Stop
-            </>
+            <><Square size={14} fill="currentColor" /> Stop</>
           ) : (
-            <>
-              <HeadphonesIcon /> Listen to Surah
-            </>
+            <><Headphones size={16} /> Listen to Surah</>
           )}
         </button>
 
-        {/* Now-playing status */}
         {activeAyah !== null ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {playState === 'playing' && (
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 3,
-                  alignItems: 'flex-end',
-                  height: 20,
-                }}>
+              <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 20 }}>
                 {[0, 0.15, 0.3, 0.15, 0].map((delay, i) => (
                   <span
                     key={i}
@@ -663,11 +483,8 @@ function AudioPanel({
             )}
             <span
               style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background:
-                  playState === 'loading' ? 'var(--gold2)' : 'var(--teal)',
+                width: 7, height: 7, borderRadius: '50%',
+                background: playState === 'loading' ? 'var(--gold2)' : 'var(--teal)',
                 boxShadow: `0 0 8px ${playState === 'loading' ? 'var(--gold2)' : 'var(--teal)'}`,
                 display: 'inline-block',
                 animationName: 'audioPulse',
@@ -682,18 +499,11 @@ function AudioPanel({
                 fontSize: '0.75rem',
                 color: playState === 'loading' ? 'var(--gold2)' : 'var(--teal)',
               }}>
-              {playState === 'loading' ? 'Loading' : 'Playing'} ayah{' '}
-              {activeAyah} / {totalAyahs}
+              {playState === 'loading' ? 'Loading' : 'Playing'} ayah {activeAyah} / {totalAyahs}
             </span>
           </div>
         ) : (
-          <span
-            style={{
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: '0.72rem',
-              color: 'var(--muted)',
-              letterSpacing: '0.04em',
-            }}>
+          <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: '0.72rem', color: 'var(--muted)', letterSpacing: '0.04em' }}>
             Abdul Basit Abdus Samad · Murattal
           </span>
         )}
@@ -721,8 +531,7 @@ function SurahHeader({
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 52,
-          height: 52,
+          width: 52, height: 52,
           borderRadius: '50%',
           background: 'rgba(201,168,76,0.1)',
           border: '1px solid rgba(201,168,76,0.35)',
@@ -751,8 +560,7 @@ function SurahHeader({
         style={{
           fontFamily: 'var(--font-cinzel), serif',
           fontSize: 'clamp(1.2rem, 2.5vw, 1.7rem)',
-          background:
-            'linear-gradient(135deg, var(--gold), var(--gold2), var(--gold3))',
+          background: 'linear-gradient(135deg, var(--gold), var(--gold2), var(--gold3))',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
@@ -773,15 +581,12 @@ function SurahHeader({
         {translation}
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-        }}>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
         <span
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
             fontFamily: 'var(--font-jetbrains), monospace',
             fontSize: '0.66rem',
             letterSpacing: '0.1em',
@@ -791,7 +596,8 @@ function SurahHeader({
             border: `1px solid ${isMeccan ? 'rgba(201,168,76,0.4)' : 'rgba(45,212,191,0.4)'}`,
             color: isMeccan ? 'var(--gold2)' : 'var(--teal)',
           }}>
-          {isMeccan ? '🕋 Makkah' : '🕌 Madinah'}
+          <Building2 size={11} />
+          {isMeccan ? 'Makkah' : 'Madinah'}
         </span>
         <span
           style={{
@@ -857,13 +663,7 @@ const AyahRow = forwardRef<
         gap: 14,
         padding: '16px 14px',
         borderRadius: 12,
-        border: `1px solid ${
-          isActive
-            ? 'rgba(201,168,76,0.45)'
-            : hov
-              ? 'rgba(201,168,76,0.22)'
-              : 'var(--border)'
-        }`,
+        border: `1px solid ${isActive ? 'rgba(201,168,76,0.45)' : hov ? 'rgba(201,168,76,0.22)' : 'var(--border)'}`,
         background: isActive
           ? 'linear-gradient(135deg, rgba(201,168,76,0.09), rgba(17,21,40,0.97))'
           : hov
@@ -873,24 +673,13 @@ const AyahRow = forwardRef<
         transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
         direction: 'rtl',
       }}>
-      {/* Left col: play button + wave */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 7,
-          paddingTop: 4,
-        }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, paddingTop: 4 }}>
         <button
           type="button"
           onClick={onPlayToggle}
-          aria-label={
-            isPlaying ? `Pause ayah ${number}` : `Play ayah ${number}`
-          }
+          aria-label={isPlaying ? `Pause ayah ${number}` : `Play ayah ${number}`}
           style={{
-            width: 34,
-            height: 34,
+            width: 34, height: 34,
             borderRadius: '50%',
             flexShrink: 0,
             display: 'flex',
@@ -917,35 +706,15 @@ const AyahRow = forwardRef<
             <SpinnerIcon size={12} color="var(--gold2)" />
           ) : isPlaying ? (
             <span style={{ display: 'flex', gap: 2 }}>
-              <span
-                style={{
-                  width: 3,
-                  height: 11,
-                  background: 'var(--teal)',
-                  borderRadius: 2,
-                  display: 'block',
-                }}
-              />
-              <span
-                style={{
-                  width: 3,
-                  height: 11,
-                  background: 'var(--teal)',
-                  borderRadius: 2,
-                  display: 'block',
-                }}
-              />
+              <span style={{ width: 3, height: 11, background: 'var(--teal)', borderRadius: 2, display: 'block' }} />
+              <span style={{ width: 3, height: 11, background: 'var(--teal)', borderRadius: 2, display: 'block' }} />
             </span>
           ) : (
             <span
               style={{
                 fontFamily: 'var(--font-jetbrains), monospace',
                 fontSize: number >= 100 ? '0.48rem' : '0.58rem',
-                color: isActive
-                  ? 'var(--gold2)'
-                  : hov
-                    ? 'var(--gold)'
-                    : 'var(--muted)',
+                color: isActive ? 'var(--gold2)' : hov ? 'var(--gold)' : 'var(--muted)',
                 lineHeight: 1,
                 transition: 'color 0.18s',
               }}>
@@ -955,13 +724,7 @@ const AyahRow = forwardRef<
         </button>
 
         {isPlaying && (
-          <div
-            style={{
-              display: 'flex',
-              gap: 2,
-              alignItems: 'flex-end',
-              height: 16,
-            }}>
+          <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 16 }}>
             {[0, 0.18, 0.36, 0.18].map((delay, i) => (
               <span
                 key={i}
@@ -982,7 +745,6 @@ const AyahRow = forwardRef<
         )}
       </div>
 
-      {/* Right col: Arabic text */}
       <p
         style={{
           margin: 0,
@@ -1034,25 +796,18 @@ function BottomNav({
   onNavigate: (s: QuranSurah) => void;
 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 10,
-        justifyContent: 'center',
-        marginTop: 52,
-        flexWrap: 'wrap',
-      }}>
+    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 52, flexWrap: 'wrap' }}>
       {prevSurah && (
         <FootNavButton onClick={() => onNavigate(prevSurah)}>
-          ← {prevSurah.englishName}
+          <ArrowLeft size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {prevSurah.englishName}
         </FootNavButton>
       )}
       <FootNavButton onClick={onClose} muted>
-        ✕ Close
+        <X size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Close
       </FootNavButton>
       {nextSurah && (
         <FootNavButton onClick={() => onNavigate(nextSurah)}>
-          {nextSurah.englishName} →
+          {nextSurah.englishName} <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
         </FootNavButton>
       )}
     </div>
@@ -1085,7 +840,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
         transition: 'color 0.18s',
         flexShrink: 0,
       }}>
-      <span style={{ fontSize: '1rem', lineHeight: 1 }}>←</span> Back
+      <ArrowLeft size={16} /> Back
     </button>
   );
 }
@@ -1109,8 +864,7 @@ function NavArrow({
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        width: 32,
-        height: 32,
+        width: 32, height: 32,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1119,11 +873,9 @@ function NavArrow({
         color: hov ? 'var(--gold2)' : 'var(--muted)',
         borderRadius: 8,
         cursor: 'pointer',
-        fontSize: '1rem',
         transition: 'all 0.18s',
-        lineHeight: 1,
       }}>
-      {direction === 'prev' ? '‹' : '›'}
+      {direction === 'prev' ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
     </button>
   );
 }
@@ -1145,25 +897,20 @@ function FootNavButton({
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
         padding: '10px 20px',
         background: 'transparent',
         border: `1px solid ${
           muted
-            ? hov
-              ? 'rgba(201,168,76,0.3)'
-              : 'var(--border)'
-            : hov
-              ? 'rgba(201,168,76,0.5)'
-              : 'rgba(201,168,76,0.25)'
+            ? hov ? 'rgba(201,168,76,0.3)' : 'var(--border)'
+            : hov ? 'rgba(201,168,76,0.5)' : 'rgba(201,168,76,0.25)'
         }`,
         borderRadius: 12,
         color: muted
-          ? hov
-            ? 'var(--silver)'
-            : 'var(--muted)'
-          : hov
-            ? 'var(--gold2)'
-            : 'var(--gold)',
+          ? hov ? 'var(--silver)' : 'var(--muted)'
+          : hov ? 'var(--gold2)' : 'var(--gold)',
         cursor: 'pointer',
         fontFamily: 'var(--font-cinzel), serif',
         fontSize: '0.82rem',
@@ -1175,32 +922,7 @@ function FootNavButton({
   );
 }
 
-function HeadphonesIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
-      <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-    </svg>
-  );
-}
-
-function StopIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-    </svg>
-  );
-}
-
+/* SpinnerIcon — CSS spin animation (uses existing @keyframes spin in globals.css) */
 function SpinnerIcon({
   size = 14,
   color = 'currentColor',

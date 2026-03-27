@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { SPECIAL_NIGHTS_REMINDER, specialDays } from '@/lib/ramadan/constants';
-import { buildCalendarDays } from '@/lib/ramadan/utils';
+import { CalendarDays, Star, Volume2 } from 'lucide-react';
+import { SPECIAL_NIGHTS_REMINDER, specialDays } from '@/lib/constants';
+import { buildCalendarDays } from '@/lib/utils';
 
 type Props = { active: boolean };
 
@@ -38,7 +39,9 @@ export function CalendarTab({ active }: Props) {
 
   return (
     <div className={'tab-section' + (active ? ' active' : '')} id="tab-calendar" role="tabpanel">
-      <div className="section-title">📆 Ramadan 2025 / 1446H</div>
+      <div className="section-title">
+        <CalendarDays size={16} /> Ramadan 2025 / 1446H
+      </div>
       <div className="cal-strip" id="calStrip" ref={calStripRef}>
         {calendarDays.map(({ day, date, isPast, isToday }) => (
           <div
@@ -76,7 +79,9 @@ export function CalendarTab({ active }: Props) {
             </div>
             {specialDays[calDetailDay] ? (
               <>
-                <div style={{ color: 'var(--gold)', fontWeight: 600, marginBottom: 8 }}>⭐ {specialDays[calDetailDay].title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold)', fontWeight: 600, marginBottom: 8 }}>
+                  <Star size={14} fill="currentColor" /> {specialDays[calDetailDay].title}
+                </div>
                 <div style={{ color: 'var(--silver)', lineHeight: 1.7 }}>{specialDays[calDetailDay].note}</div>
               </>
             ) : (
@@ -105,7 +110,8 @@ export function CalendarTab({ active }: Props) {
           }
         }}
       >
-        🌟 Special Nights
+        <Star size={16} /> Special Nights
+        <Volume2 size={14} className="special-nights-hint" style={{ marginLeft: 6 }} />
         <span className="special-nights-hint">· tap for reminder</span>
       </div>
       <div className="dua-grid">

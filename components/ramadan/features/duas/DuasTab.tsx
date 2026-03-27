@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Check, Heart } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 
 /* ─────────────────────────────────────────────────────────────────
    STEP 4 — DuasTab
@@ -184,25 +186,25 @@ const CATEGORY_META: Record<
 > = {
   morning: {
     label: 'Morning',
-    icon: '🌅',
+    icon: 'Sunrise',
     color: 'rgba(201,168,76,0.55)',
     desc: 'Recite after Fajr prayer until sunrise',
   },
   evening: {
     label: 'Evening',
-    icon: '🌆',
+    icon: 'Sunset',
     color: 'rgba(45,212,191,0.55)',
     desc: 'Recite after Asr prayer until Maghrib',
   },
   prayer: {
     label: 'After Prayer',
-    icon: '🕌',
+    icon: 'Building2',
     color: 'rgba(168,184,216,0.55)',
     desc: 'Recite after each obligatory Salah',
   },
   ramadan: {
     label: 'Ramadan',
-    icon: '🌙',
+    icon: 'Moon',
     color: 'rgba(201,168,76,0.55)',
     desc: 'Iftar, Suhoor, Laylatul Qadr & more',
   },
@@ -239,7 +241,9 @@ export function DuasTab({ active }: Props) {
       className={'tab-section' + (active ? ' active' : '')}
       id="tab-duas"
       role="tabpanel">
-      <div className="section-title">🤲 Adhkar &amp; Duas</div>
+      <div className="section-title">
+        <Heart size={16} /> Adhkar &amp; Duas
+      </div>
 
       {/* ── Category selector ── */}
       <div
@@ -274,9 +278,7 @@ export function DuasTab({ active }: Props) {
                   ? `0 0 20px ${m.color.replace('0.55', '0.15')}`
                   : 'none',
               }}>
-              <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>
-                {m.icon}
-              </span>
+              <Icon name={m.icon} size={22} style={{ color: isAc ? 'var(--gold2)' : 'var(--muted)' }} />
               <span
                 style={{
                   fontFamily: 'var(--font-jetbrains), monospace',
@@ -305,7 +307,7 @@ export function DuasTab({ active }: Props) {
           border: '1px solid var(--border)',
           borderRadius: 10,
         }}>
-        <span style={{ fontSize: '1.1rem' }}>{meta.icon}</span>
+        <Icon name={meta.icon} size={18} style={{ color: 'var(--gold)', flexShrink: 0 }} />
         <span
           style={{
             fontFamily: 'var(--font-crimson), serif',
@@ -347,6 +349,9 @@ export function DuasTab({ active }: Props) {
                     position: 'absolute',
                     top: 10,
                     left: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
                     fontFamily: 'var(--font-jetbrains), monospace',
                     fontSize: '0.6rem',
                     letterSpacing: '0.08em',
@@ -356,7 +361,7 @@ export function DuasTab({ active }: Props) {
                     borderRadius: 100,
                     padding: '2px 8px',
                   }}>
-                  ✓ copied
+                  <Check size={10} /> copied
                 </div>
               )}
 
@@ -384,8 +389,8 @@ export function DuasTab({ active }: Props) {
                     flexWrap: 'wrap',
                     gap: 6,
                   }}>
-                  <span className="dua-occasion">
-                    {meta.icon} {meta.label}
+                  <span className="dua-occasion" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name={meta.icon} size={12} /> {meta.label}
                   </span>
                   <span
                     style={{

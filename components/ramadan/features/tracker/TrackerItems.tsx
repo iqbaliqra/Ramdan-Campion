@@ -1,6 +1,8 @@
 'use client';
 
-import type { IbadahItem } from '@/lib/ramadan/types';
+import { Check } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import type { IbadahItem } from '@/lib/types';
 
 type Props = {
   items: IbadahItem[];
@@ -27,9 +29,12 @@ export function TrackerItems({ items, doneIds, onToggle }: Props) {
             role="button"
             tabIndex={0}
           >
-            <div className="tracker-check">{isDone ? '✓' : ''}</div>
+            <div className="tracker-check">
+              {isDone ? <Check size={14} strokeWidth={3} /> : null}
+            </div>
             <div className="tracker-label">
-              {item.icon} {item.label}
+              <Icon name={item.icon} size={18} />
+              {item.label}
             </div>
           </div>
         );

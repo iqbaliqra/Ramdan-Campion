@@ -1,6 +1,6 @@
 'use client';
 
-import type { StarSpec } from '@/lib/ramadan/types';
+import type { StarSpec } from '@/lib/types';
 
 type Props = { stars: StarSpec[] };
 

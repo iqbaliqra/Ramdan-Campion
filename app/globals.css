@@ -103,9 +103,9 @@ header {
 }
 
 .crescent-moon {
-  font-size: 3rem;
   display: block;
   margin: 0 auto 12px;
+  color: var(--gold);
   animation: moonGlow 4s ease-in-out infinite;
   filter: drop-shadow(0 0 18px var(--gold));
 }
@@ -307,6 +307,9 @@ header h1 {
   color: var(--gold);
   margin-bottom: 16px;
   letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -727,6 +730,10 @@ header h1 {
   }
 }
 
+.lucide-spin {
+  animation: spin 0.7s linear infinite;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
@@ -744,6 +751,10 @@ header h1 {
   padding: 10px 14px;
   background: transparent;
   border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   border-radius: 10px;
   color: var(--muted);
   font-family: var(--font-crimson), serif;

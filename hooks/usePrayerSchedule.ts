@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { PRAYER_KEYS, PRAYER_NAMES } from '@/lib/ramadan/constants';
-import type { PrayerTimings } from '@/lib/ramadan/types';
-import { fetchPrayerTimes, timeToMins } from '@/lib/ramadan/utils';
+import { PRAYER_KEYS, PRAYER_NAMES } from '@/lib/constants';
+import type { PrayerTimings } from '@/lib/types';
+import { fetchPrayerTimes, timeToMins } from '@/lib/utils';
 
 export function usePrayerSchedule() {
   const [userCity, setUserCity] = useState('Lahore');
