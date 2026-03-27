@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, BookOpen, Building2, ChevronRight, RefreshCw, Search } from 'lucide-react';
 import {
   fetchFullQuranUthmani,
+  getCachedFullQuran,
   type QuranSurah,
 } from '@/lib/quran-api';
 
@@ -133,20 +134,31 @@ type Props = {
 };
 
 export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
-  const [surahs, setSurahs] = useState<QuranSurah[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const onSurahsLoadedRef = useRef(onSurahsLoaded);
+  onSurahsLoadedRef.current = onSurahsLoaded;
+
+  const [surahs, setSurahs] = useState<QuranSurah[] | null>(() => getCachedFullQuran());
+  const [loading, setLoading] = useState(() => getCachedFullQuran() === null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => getCachedFullQuran() !== null);
 
   const load = useCallback(async () => {
-    setLoading(true);
     setError(null);
+    const cached = getCachedFullQuran();
+    if (cached) {
+      setSurahs(cached);
+      onSurahsLoadedRef.current?.(cached);
+      setReady(true);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const data = await fetchFullQuranUthmani();
       setSurahs(data);
-      onSurahsLoaded?.(data);
+      onSurahsLoadedRef.current?.(data);
       setTimeout(() => setReady(true), 60);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load Quran');
@@ -335,45 +347,31 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
         </div>
       )}
 
-      {/* ── Loading skeleton ── */}
+      {/* ── Skeleton (no spinner — API prefetches on app start) ── */}
       {loading && surahs === null && (
-        <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              padding: '24px 0 20px',
-              color: 'var(--muted)',
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: '0.8rem',
-              letterSpacing: '0.05em',
-            }}>
-            <span className="loading" aria-hidden />
-            Loading Al-Quran Al-Kareem…
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: 8,
-            }}>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  height: 74,
-                  borderRadius: 13,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg2)',
-                  opacity: 0.5 + (i % 3) * 0.1,
-                  animation: 'skeletonPulse 1.6s ease-in-out infinite',
-                  animationDelay: `${i * 70}ms`,
-                }}
-              />
-            ))}
-          </div>
+        <div
+          aria-busy="true"
+          aria-label="Loading surah list"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: 8,
+            paddingTop: 8,
+          }}>
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                height: 74,
+                borderRadius: 13,
+                border: '1px solid var(--border)',
+                background: 'var(--bg2)',
+                opacity: 0.5 + (i % 3) * 0.1,
+                animation: 'skeletonPulse 1.6s ease-in-out infinite',
+                animationDelay: `${i * 40}ms`,
+              }}
+            />
+          ))}
         </div>
       )}
 
@@ -394,7 +392,7 @@ export function QuranFullSurahs({ onSurahSelect, onSurahsLoaded }: Props) {
       )}
 
       {/* ── Results meta + Grid ── */}
-      {surahs && !loading && (
+      {surahs && (
         <>
           <div
             style={{

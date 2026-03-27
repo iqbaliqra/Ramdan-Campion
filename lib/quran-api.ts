@@ -28,6 +28,11 @@ export type QuranApiResponse = {
 let fullQuranCache: QuranSurah[] | null = null;
 let fullQuranInflight: Promise<QuranSurah[]> | null = null;
 
+/** Synchronous read of prefetched data (e.g. after app-start fetch). */
+export function getCachedFullQuran(): QuranSurah[] | null {
+  return fullQuranCache;
+}
+
 export async function fetchFullQuranUthmani(signal?: AbortSignal): Promise<QuranSurah[]> {
   if (fullQuranCache) return fullQuranCache;
   if (fullQuranInflight) return fullQuranInflight;

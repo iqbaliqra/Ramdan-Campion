@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { BookMarked } from 'lucide-react';
 import { QuranFullSurahs } from './QuranFullSurahs';
 import { SurahOverlay } from './SurahOverlay';
-import type { QuranSurah } from '@/lib/quran-api';
+import { getCachedFullQuran, type QuranSurah } from '@/lib/quran-api';
 type Props = {
   active: boolean;
   juzRead: number[];
@@ -20,7 +20,7 @@ export function QuranTab({ active, juzRead, onToggleJuz }: Props) {
    * in the module-level cache inside quran-api.ts, so we just lift
    * them up the first time they arrive via onSurahsLoaded.
    */
-  const [allSurahs, setAllSurahs] = useState<QuranSurah[]>([]);
+  const [allSurahs, setAllSurahs] = useState<QuranSurah[]>(() => getCachedFullQuran() ?? []);
 
   return (
     <div
