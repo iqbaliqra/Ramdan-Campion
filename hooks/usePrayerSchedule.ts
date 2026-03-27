@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { PRAYER_KEYS, PRAYER_NAMES } from '@/lib/constants';
+import { PRAYER_KEYS } from '@/lib/constants';
 import type { PrayerTimings } from '@/lib/types';
-import { fetchPrayerTimes, timeToMins, timeToSecsFromMidnight } from '@/lib/utils';
+import { fetchPrayerTimes, timeToSecsFromMidnight } from '@/lib/utils';
 
 const NEXT_EVENT_LABEL: Record<(typeof PRAYER_KEYS)[number], string> = {
   Fajr: 'Suhoor Ends (Fajr)',
@@ -25,7 +25,7 @@ export function usePrayerSchedule() {
   const [countH, setCountH] = useState('00');
   const [countM, setCountM] = useState('00');
   const [countS, setCountS] = useState('00');
-  const [activePrayerIdx, setActivePrayerIdx] = useState<number | null>(null);
+  const [nextPrayerIdx, setNextPrayerIdx] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,10 +80,10 @@ export function usePrayerSchedule() {
       if (!pd) return;
       const now = new Date();
       const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-      const nowMins = now.getHours() * 60 + now.getMinutes();
 
       let nextSecsFromMidnight: number | null = null;
       let nextName = 'Fajr (Tomorrow)';
+      let nextKey: (typeof PRAYER_KEYS)[number] = 'Fajr';
       for (const key of PRAYER_KEYS) {
         const raw = pd[key];
         if (!raw) continue;
@@ -91,13 +91,16 @@ export function usePrayerSchedule() {
         if (evSecs > nowSecs) {
           nextSecsFromMidnight = evSecs;
           nextName = NEXT_EVENT_LABEL[key];
+          nextKey = key;
           break;
         }
       }
       if (nextSecsFromMidnight === null) {
         nextSecsFromMidnight = timeToSecsFromMidnight(pd['Fajr']) + 86400;
         nextName = 'Fajr (Tomorrow)';
+        nextKey = 'Fajr';
       }
+      setNextPrayerIdx(PRAYER_KEYS.indexOf(nextKey));
 
       const diffSecs = Math.max(0, nextSecsFromMidnight - nowSecs);
       const h = Math.floor(diffSecs / 3600);
@@ -107,13 +110,6 @@ export function usePrayerSchedule() {
       setCountH(String(h).padStart(2, '0'));
       setCountM(String(m).padStart(2, '0'));
       setCountS(String(s).padStart(2, '0'));
-
-      let active: number | null = null;
-      PRAYER_NAMES.forEach((_, i) => {
-        const t = timeToMins(pd[PRAYER_KEYS[i]]);
-        if (Math.abs(t - nowMins) < 60) active = i;
-      });
-      setActivePrayerIdx(active);
     }
 
     tick();
@@ -129,6 +125,6 @@ export function usePrayerSchedule() {
     countH,
     countM,
     countS,
-    activePrayerIdx,
+    nextPrayerIdx,
   };
 }

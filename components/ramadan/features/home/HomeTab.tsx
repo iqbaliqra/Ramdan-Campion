@@ -16,7 +16,7 @@ type Props = {
   countH: string;
   countM: string;
   countS: string;
-  activePrayerIdx: number | null;
+  nextPrayerIdx: number | null;
   trackerDone: string[];
   onToggleTracker: (id: string) => void;
 };
@@ -39,7 +39,7 @@ export function HomeTab({
   countH,
   countM,
   countS,
-  activePrayerIdx,
+  nextPrayerIdx,
   trackerDone,
   onToggleTracker,
 }: Props) {
@@ -89,7 +89,7 @@ export function HomeTab({
           {PRAYER_NAMES.map((name, i) => {
             const PrayerIcon = PRAYER_ICONS[name as keyof typeof PRAYER_ICONS];
             return (
-              <div key={name} className={'prayer-card' + (activePrayerIdx === i ? ' active' : '')}>
+              <div key={name} className={'prayer-card' + (nextPrayerIdx === i ? ' active' : '')}>
                 {PrayerIcon && <PrayerIcon size={18} style={{ marginBottom: 4, opacity: 0.8 }} />}
                 <div className="prayer-name">{name}</div>
                 <div className="prayer-time">{prayerData ? formatTime(prayerData[PRAYER_KEYS[i]]) : '—'}</div>

@@ -46,7 +46,7 @@ export function RamadanApp() {
           countH={prayer.countH}
           countM={prayer.countM}
           countS={prayer.countS}
-          activePrayerIdx={prayer.activePrayerIdx}
+          nextPrayerIdx={prayer.nextPrayerIdx}
           trackerDone={trackerDone}
           onToggleTracker={toggleItem}
         />
